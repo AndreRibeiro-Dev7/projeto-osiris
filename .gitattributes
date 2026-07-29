@@ -1,0 +1,9 @@
+# Keep repository text files consistent across Windows, Linux and CI.
+* text=auto eol=lf
+
+# Binary assets must not be transformed by Git.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
