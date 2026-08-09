@@ -9,3 +9,9 @@ class HealthResponse(BaseModel):
     status: str
     application: str
     version: str
+
+
+class DatabaseHealthResponse(BaseModel):
+    """Public status information for the database connection."""
+
+    status: str

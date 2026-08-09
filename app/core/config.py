@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+asyncpg://osiris:osiris@localhost:5432/osiris"
+    database_echo: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

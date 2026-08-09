@@ -14,6 +14,7 @@ evolução para outros serviços baseados em agenda.
 | `services` | Casos de uso e regras de negócio. |
 | `repositories` | Acesso a dados, sem regras de negócio. |
 | `models` | Entidades persistidas com SQLAlchemy. |
+| `database` | Engine, sessões assíncronas e base declarativa do SQLAlchemy. |
 | `schemas` | Contratos tipados da API com Pydantic. |
 | `integrations` | Adaptadores para WhatsApp, OpenAI e Google Calendar. |
 | `agents` e `prompts` | Orquestração de IA e instruções versionadas. |
@@ -25,5 +26,6 @@ provedor externo sem reescrever a API.
 
 ## Próximos componentes
 
-Na Sprint 1, serão adicionados a sessão assíncrona do SQLAlchemy, Alembic e as
-primeiras entidades de negócio.
+As sessões são assíncronas e usam `asyncpg`, alinhadas ao modelo de concorrência
+do FastAPI. O Alembic é a única ferramenta responsável por evoluir tabelas e
+colunas em ambientes compartilhados.

@@ -59,3 +59,18 @@ docker compose up --build
 
 O PostgreSQL é exposto em `localhost:5432` para desenvolvimento. As credenciais
 iniciais estão em `.env.example` e só devem ser usadas localmente.
+
+## Migrações
+
+Com o banco em execução, aplique o schema versionado:
+
+```powershell
+.\.venv\Scripts\alembic.exe upgrade head
+```
+
+Após criar ou alterar um modelo SQLAlchemy, gere uma migração e revise o arquivo
+gerado antes de aplicá-lo:
+
+```powershell
+.\.venv\Scripts\alembic.exe revision --autogenerate -m "describe schema change"
+```
