@@ -66,3 +66,4 @@ pytest
 - [Arquitetura inicial](docs/architecture.md)
 - [ADR 0001 — arquitetura em camadas](docs/adr/0001-layered-architecture.md)
 - [Configuração do ambiente](docs/development-setup.md)
+- [Modelo de dados inicial](docs/data-model.md)
