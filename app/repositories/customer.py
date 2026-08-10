@@ -14,6 +14,10 @@ class CustomerRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_by_id(self, customer_id: UUID) -> Customer | None:
+        """Return a customer by primary key when it exists."""
+        return await self._session.get(Customer, customer_id)
+
     async def get_by_business_and_phone(self, business_id: UUID, phone: str) -> Customer | None:
         """Return a customer by their business-scoped phone."""
         statement = select(Customer).where(

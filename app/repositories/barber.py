@@ -14,6 +14,12 @@ class BarberRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_by_id_for_update(self, barber_id: UUID) -> Barber | None:
+        """Return and lock a barber row during scheduling decisions."""
+        statement = select(Barber).where(Barber.id == barber_id).with_for_update()
+        result = await self._session.scalars(statement)
+        return result.one_or_none()
+
     async def get_by_business_and_phone(self, business_id: UUID, phone: str) -> Barber | None:
         """Return a barber by their business-scoped phone."""
         statement = select(Barber).where(Barber.business_id == business_id, Barber.phone == phone)

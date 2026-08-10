@@ -5,11 +5,19 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
+from app.core.exceptions import (
+    DuplicateResourceError,
+    InactiveBarberError,
+    InvalidSchedulingReferenceError,
+    ResourceNotFoundError,
+    SchedulingConflictError,
+)
 from app.database.session import get_db_session
+from app.schemas.appointment import AppointmentCreate, AppointmentResponse
 from app.schemas.barber import BarberCreate, BarberResponse
 from app.schemas.business import BusinessCreate, BusinessResponse
 from app.schemas.customer import CustomerCreate, CustomerResponse
+from app.services.appointment import AppointmentService
 from app.services.barber import BarberService
 from app.services.business import BusinessService
 from app.services.customer import CustomerService
@@ -107,3 +115,27 @@ async def list_customers(
         return [CustomerResponse.model_validate(customer) for customer in customers]
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+
+
+@router.post(
+    "/{business_id}/appointments",
+    response_model=AppointmentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_appointment(
+    business_id: UUID,
+    payload: AppointmentCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> AppointmentResponse:
+    """Reserve an available time range with a barber."""
+    try:
+        appointment = await AppointmentService(session).create(business_id, payload)
+        return AppointmentResponse.model_validate(appointment)
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except (InactiveBarberError, SchedulingConflictError) as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except InvalidSchedulingReferenceError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+        ) from error

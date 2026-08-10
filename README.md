@@ -68,3 +68,4 @@ pytest
 - [Configuração do ambiente](docs/development-setup.md)
 - [Modelo de dados inicial](docs/data-model.md)
 - [API de cadastros](docs/registration-api.md)
+- [Regras de agendamento](docs/scheduling.md)
