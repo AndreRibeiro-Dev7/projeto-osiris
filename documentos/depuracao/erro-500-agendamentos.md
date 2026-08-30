@@ -14,19 +14,19 @@ GET /api/v1/businesses/{business_id}/barbers/{barber_id}/appointments
 
 com o parâmetro:
 
-```text id="f44lxj"
+```text
 appointment_date=2026-08-10
 ```
 
 estava retornando:
 
-```text id="36ygvl"
+```text
 HTTP 500 — Internal Server Error
 ```
 
-### Evidência
+### 📸 Evidência
 
-![Erro 500 na consulta de agendamentos](../images/erro-500-agendamentos.png)
+![Erro 500 na consulta de agendamentos](../imagens/erro-500-agendamentos.png)
 
 ---
 
@@ -44,13 +44,13 @@ O ambiente de desenvolvimento não estava com todas as dependências necessária
 
 Com a API parada, as dependências do projeto foram reinstaladas/atualizadas:
 
-```powershell id="odg3us"
+```powershell
 .\.venv\Scripts\python.exe -m pip install -e .
 ```
 
 Depois, a API foi iniciada novamente:
 
-```powershell id="5e5s2v"
+```powershell
 .\.venv\Scripts\fastapi.exe dev app/main.py
 ```
 
@@ -60,21 +60,21 @@ Após a correção, executei novamente exatamente a mesma requisição.
 
 ### Antes
 
-```text id="9bttzc"
+```text
 HTTP 500 — Internal Server Error
 ```
 
 ### Depois
 
-```text id="ldu1ya"
+```text
 HTTP 200 — Successful Response
 ```
 
 A API passou a retornar corretamente o agendamento em formato JSON.
 
-### Evidência da correção
+### 📸 Evidência da correção
 
-![Consulta de agendamentos funcionando](../images/agendamentos-http-200.png)
+![Consulta de agendamentos funcionando](../imagens/agendamentos-http-200.png)
 
 ---
 
