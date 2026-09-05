@@ -15,6 +15,52 @@ class AppointmentRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_by_id_for_update(self, appointment_id: UUID) -> Appointment | None:
+        """Return and lock an appointment while changing its status."""
+        statement = select(Appointment).where(Appointment.id == appointment_id).with_for_update()
+        result = await self._session.scalars(statement)
+        return result.one_or_none()
+
+    async def list_active_for_barber(
+        self,
+        *,
+        barber_id: UUID,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> list[Appointment]:
+        """Return active appointments that start inside a requested time range."""
+        statement = (
+            select(Appointment)
+            .where(
+                Appointment.barber_id == barber_id,
+                Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]),
+                Appointment.starts_at >= starts_at,
+                Appointment.starts_at < ends_at,
+            )
+            .order_by(Appointment.starts_at)
+        )
+        return list((await self._session.scalars(statement)).all())
+
+    async def list_active_overlapping(
+        self,
+        *,
+        barber_id: UUID,
+        starts_at: datetime,
+        ends_at: datetime,
+    ) -> list[Appointment]:
+        """Return active appointments that overlap a requested time range."""
+        statement = (
+            select(Appointment)
+            .where(
+                Appointment.barber_id == barber_id,
+                Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]),
+                Appointment.starts_at < ends_at,
+                Appointment.ends_at > starts_at,
+            )
+            .order_by(Appointment.starts_at)
+        )
+        return list((await self._session.scalars(statement)).all())
+
     async def has_active_conflict(
         self,
         *,

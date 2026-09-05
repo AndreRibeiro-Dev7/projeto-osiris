@@ -39,6 +39,9 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
+O projeto usa `tzdata` para interpretar fusos como `America/Sao_Paulo` no
+Windows, onde a base IANA de fusos não acompanha o sistema operacional.
+
 ## Verificação local
 
 ```powershell

@@ -14,6 +14,10 @@ class BarberRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_by_id(self, barber_id: UUID) -> Barber | None:
+        """Return a barber by primary key when it exists."""
+        return await self._session.get(Barber, barber_id)
+
     async def get_by_id_for_update(self, barber_id: UUID) -> Barber | None:
         """Return and lock a barber row during scheduling decisions."""
         statement = select(Barber).where(Barber.id == barber_id).with_for_update()

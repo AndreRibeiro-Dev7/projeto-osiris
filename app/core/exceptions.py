@@ -19,3 +19,7 @@ class InvalidSchedulingReferenceError(Exception):
 
 class InactiveBarberError(Exception):
     """Raised when attempting to schedule time with an inactive barber."""
+
+
+class InvalidAppointmentStatusTransitionError(Exception):
+    """Raised when an appointment cannot transition to the requested status."""

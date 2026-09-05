@@ -13,6 +13,7 @@ from app.database.base import Base
 
 if TYPE_CHECKING:
     from app.models.appointment import Appointment
+    from app.models.barber_schedule import BarberSchedule
     from app.models.business import Business
 
 
@@ -35,3 +36,6 @@ class Barber(Base):
 
     business: Mapped[Business] = relationship(back_populates="barbers")
     appointments: Mapped[list[Appointment]] = relationship(back_populates="barber")
+    schedules: Mapped[list[BarberSchedule]] = relationship(
+        back_populates="barber", cascade="all, delete-orphan"
+    )

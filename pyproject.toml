@@ -16,6 +16,7 @@ dependencies = [
     "fastapi[standard]>=0.115,<1.0",
     "pydantic-settings>=2.7,<3.0",
     "sqlalchemy>=2.0,<3.0",
+    "tzdata>=2025.2,<2027.0",
 ]
 
 [project.optional-dependencies]
