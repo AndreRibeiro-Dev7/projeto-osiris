@@ -1,9 +1,10 @@
 """Owner authentication endpoints."""
 
+import hmac
 from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,13 +29,32 @@ from app.services.auth import AuthService
 router = APIRouter(prefix="/auth")
 
 
+def bootstrap_is_allowed(
+    *, environment: str, configured_token: str, received_token: str | None
+) -> bool:
+    """Allow local setup or a production setup request bearing the secret token."""
+    if environment == "development":
+        return True
+    return bool(
+        configured_token
+        and received_token
+        and hmac.compare_digest(configured_token, received_token)
+    )
+
+
 @router.post("/bootstrap-owner", response_model=CurrentUserResponse, status_code=201)
 async def bootstrap_owner(
     payload: OwnerBootstrapRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    setup_token: Annotated[str | None, Header(alias="X-Setup-Token")] = None,
 ) -> CurrentUserResponse:
-    """Create the first owner of an existing business in development."""
-    if get_settings().environment != "development":
+    """Create the first owner using local mode or the production setup token."""
+    settings = get_settings()
+    if not bootstrap_is_allowed(
+        environment=settings.environment,
+        configured_token=settings.owner_bootstrap_token,
+        received_token=setup_token,
+    ):
         raise HTTPException(status_code=404, detail="Not found.")
     try:
         user = await AuthService(session).bootstrap_owner(**payload.model_dump())
@@ -102,7 +122,11 @@ async def change_password(
 @router.post(
     "/email/request",
     response_model=EmailChangeRequestedResponse,
-    responses={400: {"description": "Incorrect current password."}, 409: {"description": "Email already in use."}, 503: {"description": "Email delivery unavailable."}},
+    responses={
+        400: {"description": "Incorrect current password."},
+        409: {"description": "Email already in use."},
+        503: {"description": "Email delivery unavailable."},
+    },
 )
 async def request_email_change(
     payload: EmailChangeRequest,
@@ -155,7 +179,10 @@ async def request_email_change(
 @router.post(
     "/email/confirm",
     response_model=CurrentUserResponse,
-    responses={400: {"description": "Invalid or expired code."}, 409: {"description": "Email already in use."}},
+    responses={
+        400: {"description": "Invalid or expired code."},
+        409: {"description": "Email already in use."},
+    },
 )
 async def confirm_email_change(
     payload: EmailChangeConfirmRequest,
@@ -164,9 +191,7 @@ async def confirm_email_change(
 ) -> CurrentUserResponse:
     """Confirm the code and apply the pending login email."""
     try:
-        user = await AuthService(session).confirm_email_change(
-            user=current_user, code=payload.code
-        )
+        user = await AuthService(session).confirm_email_change(user=current_user, code=payload.code)
     except DuplicateResourceError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
     if user is None:

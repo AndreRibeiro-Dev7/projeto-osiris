@@ -85,6 +85,9 @@ arquivo. Durante a criação, informe os segredos solicitados:
 
 A chave JWT é criada automaticamente. A conexão privada do banco também é
 preenchida pelo Blueprint e convertida pelo Osiris para o driver `asyncpg`.
+O `OWNER_BOOTSTRAP_TOKEN` também é gerado automaticamente e protege a criação
+do primeiro proprietário. Depois que uma empresa já possui um proprietário, o
+endpoint recusa novas tentativas para ela.
 
 O Blueprint começa nos planos gratuitos para permitir a primeira homologação.
 Antes de atender uma barbearia real, altere o serviço e o banco para planos com

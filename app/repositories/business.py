@@ -33,6 +33,7 @@ class BusinessRepository:
         loyalty_enabled: bool,
         loyalty_target: int,
         loyalty_reward: str,
+        monthly_revenue_goal_cents: int,
     ) -> Business:
         """Add a new business to the current unit of work."""
         business = Business(
@@ -42,6 +43,7 @@ class BusinessRepository:
             loyalty_enabled=loyalty_enabled,
             loyalty_target=loyalty_target,
             loyalty_reward=loyalty_reward,
+            monthly_revenue_goal_cents=monthly_revenue_goal_cents,
         )
         self._session.add(business)
         return business
