@@ -10,10 +10,12 @@ htmlcov/
 
 # Virtual environments
 .venv/
+.venv-*/
 venv/
 
 # Environment and secrets
 .env
+.env.txt
 !.env.example
 
 # Editors and operating systems
@@ -24,8 +26,10 @@ Thumbs.db
 
 # Build artifacts
 build/
-dist/
 *.egg-info/
 
 # Database volumes
 postgres_data/
+
+# Local recovery and repair artifacts
+work/

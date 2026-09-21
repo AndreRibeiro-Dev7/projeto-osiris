@@ -11,11 +11,14 @@ from app.core.exceptions import InactiveBarberError
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.barber import Barber
 from app.models.barber_schedule import BarberSchedule
+from app.models.barber_time_off import BarberTimeOff
 from app.models.business import Business
 from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.barber_schedule import BarberScheduleRepository
+from app.repositories.barber_time_off import BarberTimeOffRepository
 from app.repositories.business import BusinessRepository
+from app.repositories.business_closure import BusinessClosureRepository
 from app.services.availability import AvailabilityService
 
 BUSINESS_ID = UUID("b932827e-a7b0-46b2-9d9e-d30419f89777")
@@ -27,6 +30,7 @@ def make_service(
     *,
     schedule: BarberSchedule | None,
     appointments: list[Appointment] | None = None,
+    time_off: list[BarberTimeOff] | None = None,
     barber_active: bool = True,
 ) -> AvailabilityService:
     session_mock = AsyncMock(spec=AsyncSession)
@@ -51,11 +55,17 @@ def make_service(
     schedule_repository.get.return_value = schedule
     appointment_repository = AsyncMock(spec=AppointmentRepository)
     appointment_repository.list_active_overlapping.return_value = appointments or []
+    time_off_repository = AsyncMock(spec=BarberTimeOffRepository)
+    time_off_repository.list_overlapping.return_value = time_off or []
+    closure_repository = AsyncMock(spec=BusinessClosureRepository)
+    closure_repository.get_for_date.return_value = None
 
     service._businesses = cast(BusinessRepository, business_repository)
     service._barbers = cast(BarberRepository, barber_repository)
     service._schedules = cast(BarberScheduleRepository, schedule_repository)
     service._appointments = cast(AppointmentRepository, appointment_repository)
+    service._time_off = cast(BarberTimeOffRepository, time_off_repository)
+    service._closures = cast(BusinessClosureRepository, closure_repository)
     return service
 
 
@@ -68,6 +78,17 @@ def make_monday_schedule() -> BarberSchedule:
         ends_at=time(11),
         slot_duration_minutes=30,
     )
+
+
+def test_availability_excludes_slots_that_overlap_time_off() -> None:
+    blocked = BarberTimeOff(
+        id=uuid4(), barber_id=BARBER_ID,
+        starts_at=datetime(2026, 9, 7, 12, 30, tzinfo=UTC),
+        ends_at=datetime(2026, 9, 7, 13, 0, tzinfo=UTC), reason="Almoço",
+    )
+    service = make_service(schedule=make_monday_schedule(), time_off=[blocked])
+    result = asyncio.run(service.list_available_slots(business_id=BUSINESS_ID, barber_id=BARBER_ID, appointment_date=MONDAY))
+    assert [slot.starts_at.hour for slot in result.slots] == [9, 10, 10]
 
 
 def test_availability_excludes_slots_that_overlap_active_appointments() -> None:

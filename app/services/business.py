@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
 from app.models.business import Business
 from app.repositories.business import BusinessRepository
-from app.schemas.business import BusinessCreate
+from app.schemas.business import BusinessCreate, BusinessUpdate
 
 
 class BusinessService:
@@ -38,4 +38,26 @@ class BusinessService:
         business = await self._repository.get_by_id(business_id)
         if business is None:
             raise ResourceNotFoundError("Business not found.")
+        return business
+
+    async def update(self, business_id: UUID, payload: BusinessUpdate) -> Business:
+        """Update a barbershop profile while keeping its phone unique."""
+        business = await self.get(business_id)
+        phone_owner = await self._repository.get_by_phone(payload.phone)
+        if phone_owner is not None and phone_owner.id != business.id:
+            raise DuplicateResourceError("A business with this phone already exists.")
+
+        business.name = payload.name
+        business.phone = payload.phone
+        business.timezone = payload.timezone
+        business.loyalty_enabled = payload.loyalty_enabled
+        business.loyalty_target = payload.loyalty_target
+        business.loyalty_reward = payload.loyalty_reward
+        business.monthly_revenue_goal_cents = payload.monthly_revenue_goal_cents
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError("A business with this phone already exists.") from error
+        await self._session.refresh(business)
         return business

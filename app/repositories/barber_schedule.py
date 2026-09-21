@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.barber_schedule import BarberSchedule
@@ -24,6 +24,16 @@ class BarberScheduleRepository:
         result = await self._session.scalars(statement)
         return result.one_or_none()
 
+    async def list_for_barber(self, barber_id: UUID) -> list[BarberSchedule]:
+        """Return all weekly schedules configured for one barber."""
+        statement = (
+            select(BarberSchedule)
+            .where(BarberSchedule.barber_id == barber_id)
+            .order_by(BarberSchedule.weekday)
+        )
+        result = await self._session.scalars(statement)
+        return list(result.all())
+
     async def upsert(
         self,
         *,
@@ -40,4 +50,16 @@ class BarberScheduleRepository:
         schedule.starts_at = payload.starts_at
         schedule.ends_at = payload.ends_at
         schedule.slot_duration_minutes = payload.slot_duration_minutes
+        schedule.break_starts_at = payload.break_starts_at
+        schedule.break_ends_at = payload.break_ends_at
         return schedule
+
+    async def delete(self, barber_id: UUID, weekday: int) -> bool:
+        """Remove one recurring working day if it exists."""
+        result = await self._session.execute(
+            delete(BarberSchedule).where(
+                BarberSchedule.barber_id == barber_id,
+                BarberSchedule.weekday == weekday,
+            )
+        )
+        return bool(result.rowcount)

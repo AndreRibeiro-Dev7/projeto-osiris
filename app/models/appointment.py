@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, Text, Uuid, func
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from app.models.barber import Barber
     from app.models.business import Business
     from app.models.customer import Customer
+    from app.models.service import Service
 
 
 class AppointmentStatus(StrEnum):
@@ -26,6 +27,15 @@ class AppointmentStatus(StrEnum):
     CANCELLED = "cancelled"
     COMPLETED = "completed"
     NO_SHOW = "no_show"
+
+
+class PaymentMethod(StrEnum):
+    """Accepted payment methods for completed appointments."""
+
+    PIX = "pix"
+    CASH = "cash"
+    CREDIT_CARD = "credit_card"
+    DEBIT_CARD = "debit_card"
 
 
 class Appointment(Base):
@@ -39,6 +49,7 @@ class Appointment(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    public_token: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), unique=True, nullable=False, default=uuid4)
     business_id: Mapped[UUID] = mapped_column(
         ForeignKey("businesses.id", ondelete="RESTRICT"), nullable=False
     )
@@ -48,6 +59,12 @@ class Appointment(Base):
     customer_id: Mapped[UUID] = mapped_column(
         ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False
     )
+    service_id: Mapped[UUID | None] = mapped_column(ForeignKey("services.id", ondelete="SET NULL"), nullable=True)
+    price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_method: Mapped[PaymentMethod | None] = mapped_column(
+        Enum(PaymentMethod, name="payment_method", values_callable=lambda enum_class: [member.value for member in enum_class]), nullable=True
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[AppointmentStatus] = mapped_column(
@@ -67,3 +84,4 @@ class Appointment(Base):
     business: Mapped[Business] = relationship(back_populates="appointments")
     barber: Mapped[Barber] = relationship(back_populates="appointments")
     customer: Mapped[Customer] = relationship(back_populates="appointments")
+    service: Mapped[Service | None] = relationship(back_populates="appointments")

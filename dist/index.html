@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b110e" />
+    <title>Osiris — Gestão da barbearia</title>
+    <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20260920-35" />
+    <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
+  </head>
+  <body>
+    <section id="login-view" class="login-shell">
+      <div class="login-brand">
+        <div class="brand-mark">O</div>
+        <span>OSIRIS</span>
+      </div>
+      <main class="login-card">
+        <p class="eyebrow">ÁREA DO PROPRIETÁRIO</p>
+        <h1>Sua barbearia,<br />sob controle.</h1>
+        <p class="muted">Entre para acompanhar a agenda, clientes e equipe.</p>
+        <form id="login-form">
+          <label>E-mail<input id="email" name="email" type="email" autocomplete="username" required /></label>
+          <label>Senha<input id="password" name="password" type="password" autocomplete="current-password" required /></label>
+          <p id="login-error" class="error" role="alert"></p>
+          <button id="login-button" class="primary" type="submit"><span id="login-button-label">Entrar no painel</span><span>→</span></button>
+        </form>
+      </main>
+      <p class="login-foot">Projeto Osiris · Gestão inteligente</p>
+    </section>
+
+    <section id="loading-view" class="loading-view" hidden aria-live="polite">
+      <div class="loading-brand">
+        <div class="brand-mark">O</div>
+        <span>OSIRIS</span>
+      </div>
+      <div class="loader" aria-hidden="true"></div>
+      <h2>Preparando sua central</h2>
+      <p>Carregando agenda, clientes e equipe.</p>
+    </section>
+
+    <div id="app-view" class="app-shell" hidden>
+      <aside>
+        <div class="login-brand"><div class="brand-mark">O</div><span>OSIRIS</span></div>
+        <nav>
+          <button class="nav-item active" data-view="inicio"><span>⌂</span> Visão geral</button>
+          <button class="nav-item" data-view="agenda"><span>◫</span> Agenda</button>
+          <button class="nav-item" data-view="clientes"><span>♙</span> Clientes</button>
+          <button class="nav-item" data-view="equipe"><span>✂</span> Equipe</button>
+          <button class="nav-item" data-view="servicos"><span>◇</span> Serviços</button>
+          <button class="nav-item" data-view="financeiro"><span>▥</span> Financeiro</button>
+          <button class="nav-item" data-view="online"><span>↗</span> Agendamento online</button>
+          <button class="nav-item" data-view="configuracoes"><span>⚙</span> Configurações</button>
+          <button class="nav-item" data-view="fechamentos"><span>⊘</span> Fechamentos</button>
+        </nav>
+        <div class="side-foot">
+          <span id="user-email"></span>
+          <button id="logout" class="link-button">Sair</button>
+        </div>
+      </aside>
+      <div class="workspace">
+        <header>
+          <button id="menu" class="menu" aria-label="Abrir menu">☰</button>
+          <div><p class="eyebrow" id="today-label"></p><h2 id="business-name">Painel Osiris</h2></div>
+          <span class="status-dot">API conectada</span>
+        </header>
+        <main class="content">
+          <section id="inicio-panel" class="panel-view">
+            <section class="home-hero"><div><p class="eyebrow">CENTRAL OSIRIS</p><h1 id="home-greeting">Bom dia.</h1><p>A operação da sua barbearia em um só lugar.</p></div><button class="primary compact" data-home-action="appointment" type="button"><span>＋ Novo agendamento</span><span>→</span></button></section>
+            <section class="home-attention"><div class="section-heading"><div><p class="eyebrow">CENTRAL DE ATENÇÃO</p><h2>Pendências importantes</h2></div><span id="home-alert-count"></span></div><div id="home-alert-list" class="home-alert-list"></div></section>
+            <div class="home-stats"><article><span>AGENDA DE HOJE</span><strong id="home-appointments">—</strong><small id="home-confirmed">carregando atendimentos</small></article><article><span>FATURAMENTO DO MÊS</span><strong id="home-revenue">—</strong><small id="home-goal">acompanhamento da meta</small></article><article><span>CLIENTES</span><strong id="home-customers">—</strong><small>na sua carteira</small></article><article><span>EQUIPE ATIVA</span><strong id="home-barbers">—</strong><small>profissionais atendendo</small></article></div>
+            <div class="home-grid"><section class="table-card home-schedule"><div class="table-head"><div><p class="eyebrow">HOJE</p><h3>Próximos atendimentos</h3></div><button class="home-text-link" data-home-view="agenda" type="button">Ver agenda →</button></div><div id="home-next-appointments"></div></section><section class="home-shortcuts"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>O que deseja fazer?</h2></div><button data-home-view="clientes" type="button"><span>♙</span><div><strong>Clientes</strong><small>Carteira e histórico</small></div><b>→</b></button><button data-home-view="equipe" type="button"><span>✂</span><div><strong>Equipe</strong><small>Jornadas e comissões</small></div><b>→</b></button><button data-home-view="financeiro" type="button"><span>▥</span><div><strong>Financeiro</strong><small>Resultados e despesas</small></div><b>→</b></button><button data-home-view="online" type="button"><span>↗</span><div><strong>Agendamento online</strong><small>Compartilhe seu link</small></div><b>→</b></button></section></div>
+          </section>
+          <section id="agenda-panel" class="panel-view" hidden>
+            <div class="title-row"><div><h1>Agenda</h1><p class="muted">Acompanhe os atendimentos do dia.</p></div><div class="title-actions agenda-date-actions"><div class="date-navigation"><button id="previous-day" class="secondary date-step" type="button" aria-label="Dia anterior">←</button><button id="today-button" class="secondary" type="button">Hoje</button><button id="next-day" class="secondary date-step" type="button" aria-label="Próximo dia">→</button></div><label class="date-control">Data<input id="date-filter" type="date" /></label><button id="new-appointment" class="primary compact" type="button"><span>＋ Novo agendamento</span></button></div></div>
+            <div class="stats">
+              <article><span>AGENDAMENTOS</span><strong id="stat-total">—</strong><small>no dia selecionado</small></article>
+              <article><span>CONFIRMADOS</span><strong id="stat-confirmed">—</strong><small>prontos para atender</small></article>
+              <article><span>HORÁRIOS LIVRES</span><strong id="stat-free">—</strong><small>para o profissional</small></article>
+              <article><span>RECEBIDO</span><strong id="stat-revenue">—</strong><small>atendimentos concluídos</small></article>
+            </div>
+            <div class="toolbar agenda-toolbar"><label>Profissional<select id="barber-filter"></select></label><label>Buscar cliente<input id="agenda-search" type="search" placeholder="Nome ou telefone" /></label><label>Status<select id="agenda-status"><option value="all">Todos</option><option value="scheduled">Agendados</option><option value="confirmed">Confirmados</option><option value="completed">Concluídos</option><option value="cancelled">Cancelados</option><option value="no_show">Não compareceu</option></select></label><button id="refresh" class="secondary">Atualizar</button></div>
+            <section class="table-card"><div class="table-head"><h3>Atendimentos</h3><span id="schedule-count"></span></div><div id="appointments" class="appointment-list"></div></section>
+          </section>
+          <section id="clientes-panel" class="panel-view" hidden><div class="title-row"><div><h1>Clientes</h1><p class="muted">Pessoas cadastradas na barbearia.</p></div><div class="title-actions"><button id="export-customers" class="secondary compact" type="button">Exportar Excel</button><button class="primary compact open-person" data-kind="customer" type="button"><span>＋ Novo cliente</span></button></div></div><section class="customer-ranking"><div class="section-heading"><div><p class="eyebrow">RELACIONAMENTO</p><h2>Clientes que mais compram</h2></div><span id="ranking-note">Atendimentos concluídos</span></div><div id="customer-ranking-list" class="ranking-grid"><div class="empty">Carregando ranking...</div></div></section><section class="customer-birthdays"><div class="section-heading"><div><p class="eyebrow">PRÓXIMOS 30 DIAS</p><h2>Aniversariantes</h2></div><span id="birthday-count"></span></div><div id="birthday-list" class="birthday-grid"><div class="empty">Nenhum aniversário cadastrado.</div></div></section><section class="customer-segments" aria-label="Segmentos de clientes"><button class="segment-card active" data-customer-segment="all" type="button"><span>Todos</span><strong id="segment-all">0</strong><small>carteira completa</small></button><button class="segment-card" data-customer-segment="active" type="button"><span>Ativos</span><strong id="segment-active">0</strong><small>visita nos últimos 45 dias</small></button><button class="segment-card" data-customer-segment="attention" type="button"><span>Atenção</span><strong id="segment-attention">0</strong><small>sem visita de 46 a 90 dias</small></button><button class="segment-card" data-customer-segment="inactive" type="button"><span>Inativos</span><strong id="segment-inactive">0</strong><small>mais de 90 dias ou sem visita</small></button></section><div class="customer-toolbar"><label for="customer-search">Buscar cliente</label><div class="search-field"><span aria-hidden="true">⌕</span><input id="customer-search" type="search" autocomplete="off" placeholder="Digite o nome ou telefone" /></div><small id="customer-search-count"></small></div><div id="customers" class="people-grid"></div></section>
+          <section id="equipe-panel" class="panel-view" hidden><div class="title-row"><div><h1>Equipe</h1><p class="muted">Profissionais e situação atual.</p></div><button class="primary compact open-person" data-kind="barber" type="button"><span>＋ Novo profissional</span></button></div><div id="team" class="people-grid"></div></section>
+          <section id="servicos-panel" class="panel-view" hidden><div class="title-row"><div><h1>Serviços</h1><p class="muted">Catálogo, duração e preços da barbearia.</p></div><button id="new-service" class="primary compact" type="button"><span>＋ Novo serviço</span></button></div><div id="services" class="people-grid"></div></section>
+          <section id="financeiro-panel" class="panel-view" hidden>
+            <div class="title-row"><div><h1>Financeiro</h1><p class="muted">Resultados e recebimentos no período.</p></div><div class="title-actions report-filters"><label class="date-control">De<input id="report-from" type="date" /></label><label class="date-control">Até<input id="report-to" type="date" /></label><button id="export-report" class="secondary compact" type="button" disabled>Exportar Excel</button><button id="refresh-report" class="primary compact" type="button"><span>Atualizar</span></button></div></div>
+            <div class="stats report-stats">
+              <article><span>FATURAMENTO</span><strong id="report-revenue">—</strong><small>atendimentos concluídos</small><em id="report-revenue-change" class="report-change"></em></article>
+              <article><span>COMISSÕES</span><strong id="report-commission">—</strong><small>repasse aos profissionais</small></article>
+              <article><span>RECEITA LÍQUIDA</span><strong id="report-net">—</strong><small>após as comissões</small></article>
+              <article><span>DESPESAS</span><strong id="report-expenses-total">—</strong><small>gastos do período</small></article>
+              <article><span>RESULTADO FINAL</span><strong id="report-result">—</strong><small>receita menos comissões e despesas</small><em id="report-result-change" class="report-change"></em></article>
+              <article><span>TICKET MÉDIO</span><strong id="report-average-ticket">—</strong><small>por atendimento concluído</small></article>
+              <article><span>COMPARECIMENTO</span><strong id="report-attendance-rate">—</strong><small>concluídos entre presenças e faltas</small><em id="report-attendance-change" class="report-change"></em></article>
+              <article><span>CONCLUÍDOS</span><strong id="report-completed">—</strong><small>pagamentos registrados</small></article>
+              <article><span>CANCELADOS</span><strong id="report-cancelled">—</strong><small>no período selecionado</small></article>
+              <article><span>NÃO COMPARECERAM</span><strong id="report-no-show">—</strong><small>faltas registradas</small></article>
+            </div>
+            <div id="report-error" class="report-error" hidden></div>
+            <section class="revenue-goal-card"><form id="revenue-goal-form"><div><p class="eyebrow">META MENSAL</p><h3 id="revenue-goal-title">Defina seu objetivo</h3><p id="revenue-goal-detail">Cadastre uma meta para acompanhar a evolução do faturamento.</p></div><label>Meta (R$)<input id="revenue-goal-input" type="number" min="0" step="0.01" required /></label><button class="secondary" type="submit">Salvar meta</button></form><div class="goal-progress" role="progressbar" aria-label="Progresso da meta mensal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="revenue-goal-progress"></i></div><div class="goal-history-head"><div><p class="eyebrow">ACOMPANHAMENTO ANUAL</p><h3>Metas de janeiro a dezembro</h3><span>Meses acima da meta compensam automaticamente déficits anteriores.</span></div><div><label>Ano<input id="goal-history-year" type="number" min="2020" max="2100" /></label><button id="refresh-goal-history" class="secondary compact" type="button">Atualizar metas</button></div></div><div id="goal-year-summary" class="goal-year-summary"></div><div id="goal-month-cards" class="goal-month-cards"><div class="empty">Carregando acompanhamento anual...</div></div><section id="goal-month-analysis" class="goal-month-analysis" hidden></section></section>
+            <section class="financial-chart-card"><div class="table-head"><div><h3>Desempenho financeiro</h3><span id="financial-chart-subtitle">Receitas, despesas e resultado líquido por dia</span></div><div class="chart-head-tools"><div class="chart-legend"><span><i class="revenue-swatch"></i>Receitas</span><span><i class="expenses-swatch"></i>Despesas</span><span><i class="result-swatch"></i>Resultado</span></div><label class="chart-period-control">Agrupar<select id="chart-period"><option value="day">Por dia</option><option value="week">Por semana</option><option value="month">Por mês</option></select></label><div class="chart-zoom-controls" aria-label="Controles do gráfico"><button id="chart-zoom-out" type="button" aria-label="Afastar gráfico" title="Afastar">−</button><button id="chart-zoom-reset" type="button" title="Restaurar zoom"><span id="chart-zoom-label">100%</span></button><button id="chart-zoom-in" type="button" aria-label="Ampliar gráfico" title="Ampliar">＋</button></div></div></div><div class="chart-date-toolbar"><div><strong>Período exclusivo do gráfico</strong><span id="chart-date-label">Altere as datas sem modificar o restante do relatório.</span></div><div><label>De<input id="chart-date-from" type="date" /></label><label>Até<input id="chart-date-to" type="date" /></label><button id="refresh-financial-chart" class="secondary compact" type="button">Atualizar gráfico</button></div></div><div id="financial-chart-viewport" class="financial-chart-viewport"><div id="financial-chart" class="financial-chart"></div></div><p class="chart-pan-hint">Escolha o agrupamento, use a lupa e arraste o gráfico para navegar.</p></section>
+            <div class="report-grid">
+              <section class="table-card report-card"><div class="table-head"><h3>Por profissional</h3></div><div id="report-barbers"></div></section>
+              <section class="table-card report-card"><div class="table-head"><h3>Por serviço</h3></div><div id="report-services"></div></section>
+              <section class="table-card report-card"><div class="table-head"><h3>Por pagamento</h3></div><div id="report-payments"></div></section>
+            </div>
+            <section class="expense-summary-toolbar"><div><p class="eyebrow">RESUMO DE DESPESAS</p><h3>Período das despesas</h3><small id="expense-summary-period">Selecione as datas para recalcular os cartões e a lista abaixo.</small></div><div class="expense-summary-dates"><label>De<input id="expense-summary-from" type="date" /></label><label>Até<input id="expense-summary-to" type="date" /></label><button id="refresh-expense-summary" class="secondary compact" type="button">Atualizar despesas</button></div></section>
+            <section class="expense-summary"><article data-expense-summary-filter="paid" role="button" tabindex="0"><span>TOTAL PAGO</span><strong id="expense-paid-total">—</strong><small id="expense-paid-count">0 despesas</small></article><article data-expense-summary-filter="pending" role="button" tabindex="0"><span>A PAGAR</span><strong id="expense-pending-total">—</strong><small id="expense-pending-count">0 despesas</small></article><article data-expense-summary-filter="overdue" role="button" tabindex="0"><span>VENCIDAS</span><strong id="expense-overdue-total">—</strong><small id="expense-overdue-count">0 despesas</small></article><article data-expense-summary-filter="fixed" role="button" tabindex="0"><span>CUSTOS FIXOS</span><strong id="expense-fixed-total">—</strong><small id="expense-fixed-count">0 despesas</small></article></section>
+            <section class="table-card expense-card"><div class="table-head"><div><h3>Despesas do período</h3><span id="expense-count"></span></div><div class="expense-head-actions"><label>Exibir<select id="expense-filter"><option value="all">Todas</option><option value="pending">Pendentes</option><option value="due">A vencer</option><option value="overdue">Vencidas</option><option value="paid">Pagas</option><option value="fixed">Fixas</option><option value="variable">Variáveis</option></select></label><button id="generate-fixed-expenses" class="secondary compact" type="button">Gerar próximo mês</button><button id="new-expense" class="primary compact" type="button"><span>＋ Nova despesa</span></button></div></div><div id="expenses"></div></section>
+            <section class="expense-comparison-card"><div class="table-head"><div><p class="eyebrow">ANÁLISE PROFISSIONAL</p><h3>Análise financeira por período</h3><span>Compare todos os meses de um intervalo e receba um parecer detalhado.</span></div><div class="expense-comparison-controls"><label>Mês inicial<input id="comparison-month-a" type="month" /></label><label>Mês final<input id="comparison-month-b" type="month" /></label><button id="compare-expense-months" class="primary compact" type="button">Analisar período</button></div></div><div id="expense-comparison-results" class="expense-analysis-empty">Selecione um intervalo de meses para gerar a análise.</div></section>
+          </section>
+          <section id="online-panel" class="panel-view" hidden><div class="title-row"><div><h1>Agendamento online</h1><p class="muted">Compartilhe o link para seus clientes reservarem horários.</p></div></div><section class="public-link-card"><p class="eyebrow">LINK PÚBLICO DA BARBEARIA</p><h2>Receba agendamentos a qualquer hora</h2><p>O cliente escolhe serviço, profissional, data e horário. A reserva entra automaticamente na sua agenda.</p><div class="public-link-box"><input id="public-booking-link" readonly/><button id="copy-booking-link" class="primary" type="button"><span>Copiar link</span></button></div><a id="open-booking-link" class="preview-link" target="_blank" rel="noopener">Abrir página de agendamento →</a></section></section>
+          <section id="configuracoes-panel" class="panel-view" hidden><div class="title-row"><div><h1>Configurações</h1><p class="muted">Dados principais da sua barbearia e segurança da conta.</p></div></div><section class="settings-card"><p class="eyebrow">PERFIL DO ESTABELECIMENTO</p><form id="business-form"><label>Nome da barbearia<input id="business-settings-name" type="text" minlength="2" maxlength="120" required /></label><label>Telefone<input id="business-settings-phone" type="tel" minlength="8" maxlength="30" required /></label><label>Fuso horário<select id="business-settings-timezone" required><option value="America/Sao_Paulo">Brasília — São Paulo</option><option value="America/Manaus">Manaus</option><option value="America/Cuiaba">Cuiabá</option><option value="America/Rio_Branco">Rio Branco</option><option value="America/Fortaleza">Fortaleza</option><option value="America/Recife">Recife</option><option value="America/Bahia">Salvador — Bahia</option></select></label><p class="settings-note">O fuso horário determina como os horários da agenda e dos relatórios são apresentados.</p><p id="business-error" class="form-error" role="alert"></p><button id="save-business" class="primary" type="submit"><span id="save-business-label">Salvar configurações</span><span>→</span></button></form></section><section class="settings-card"><p class="eyebrow">PROGRAMA DE FIDELIDADE</p><form id="loyalty-form"><label class="toggle-field"><input id="loyalty-enabled" type="checkbox" /><span>Ativar fidelidade para os clientes</span></label><label>Atendimentos para completar<input id="loyalty-target" type="number" min="2" max="50" required /></label><label>Recompensa<input id="loyalty-reward" type="text" minlength="2" maxlength="120" required /></label><p class="settings-note">Cada atendimento concluído soma um ponto. Ao atingir a meta, o cliente conquista a recompensa informada.</p><p id="loyalty-error" class="form-error" role="alert"></p><button id="save-loyalty" class="primary" type="submit"><span id="save-loyalty-label">Salvar fidelidade</span><span>→</span></button></form></section><section class="settings-card"><p class="eyebrow">E-MAIL DE ACESSO</p><form id="email-form"><label>E-mail atual<input id="current-email" type="email" disabled /></label><label>Novo e-mail<input id="new-email" type="email" autocomplete="email" required /></label><label>Senha atual<input id="email-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><p class="settings-note">Após a alteração, você entrará novamente usando o novo e-mail.</p><p id="email-error" class="form-error" role="alert"></p><button id="save-email" class="primary" type="submit"><span id="save-email-label">Alterar e-mail</span><span>→</span></button></form></section><section class="settings-card"><p class="eyebrow">SEGURANÇA DA CONTA</p><form id="password-form"><label>Senha atual<input id="current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><label>Nova senha<input id="new-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><label>Confirmar nova senha<input id="confirm-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><p class="settings-note">Use pelo menos 12 caracteres. Após a alteração, você entrará novamente com a nova senha.</p><p id="password-error" class="form-error" role="alert"></p><button id="save-password" class="primary" type="submit"><span id="save-password-label">Alterar senha</span><span>→</span></button></form></section></section>
+          <section id="fechamentos-panel" class="panel-view" hidden><div class="title-row"><div><h1>Fechamentos</h1><p class="muted">Feriados e dias em que a barbearia não abrirá.</p></div></div><section class="settings-card"><form id="closure-form"><div class="form-grid"><label>Data<input id="closure-date" type="date" required /></label><label>Motivo<input id="closure-reason" minlength="2" maxlength="200" required placeholder="Ex.: Feriado" /></label></div><p id="closure-error" class="form-error" role="alert"></p><button class="primary" type="submit"><span>Adicionar fechamento</span><span>→</span></button></form></section><section class="table-card"><div class="table-head"><h3>Dias cadastrados</h3></div><div id="closure-list"></div></section></section>
+        </main>
+      </div>
+    </div>
+    <div id="email-confirm-modal" class="modal-backdrop" hidden><section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="email-confirm-title"><div class="modal-head"><div><p class="eyebrow">CONFIRMAÇÃO DE SEGURANÇA</p><h2 id="email-confirm-title">Digite o código</h2><p id="email-code-destination" class="modal-subtitle"></p></div><button id="close-email-confirm" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="email-confirm-form"><label>Código de seis dígitos<input id="email-code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000" /></label><p id="email-code-hint" class="settings-note">O código expira em 10 minutos.</p><p id="email-confirm-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-email-confirm" class="secondary" type="button">Voltar</button><button id="confirm-email" class="primary" type="submit"><span id="confirm-email-label">Confirmar novo e-mail</span><span>→</span></button></div></form></section></div>
+    <div id="appointment-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="appointment-title">
+        <div class="modal-head"><div><p class="eyebrow">NOVA RESERVA</p><h2 id="appointment-title">Novo agendamento</h2></div><button id="close-appointment" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="appointment-form">
+          <div class="form-grid">
+            <label>Cliente<select id="appointment-customer" required></select></label>
+            <label>Profissional<select id="appointment-barber" required></select></label>
+            <label>Serviço<select id="appointment-service" required></select></label>
+            <label>Data<input id="appointment-date" type="date" required /></label>
+            <label>Horário disponível<select id="appointment-slot" required><option value="">Selecione data e profissional</option></select></label>
+          </div>
+          <label>Observações<textarea id="appointment-notes" rows="3" maxlength="1000" placeholder="Ex.: Corte e barba"></textarea></label>
+          <p id="appointment-error" class="form-error" role="alert"></p>
+          <div class="modal-actions"><button id="cancel-appointment-form" class="secondary" type="button">Voltar</button><button id="save-appointment" class="primary" type="submit"><span id="save-appointment-label">Criar agendamento</span><span>→</span></button></div>
+        </form>
+      </section>
+    </div>
+    <div id="reschedule-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="reschedule-title"><div class="modal-head"><div><p class="eyebrow">ALTERAR RESERVA</p><h2 id="reschedule-title">Reagendar atendimento</h2><p id="reschedule-customer" class="modal-subtitle"></p></div><button id="close-reschedule" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="reschedule-form"><div class="form-grid"><label>Profissional<select id="reschedule-barber" required></select></label><label>Serviço<select id="reschedule-service" required></select></label><label>Nova data<input id="reschedule-date" type="date" required /></label><label>Novo horário<select id="reschedule-slot" required><option value="">Selecione as opções</option></select></label></div><p class="form-hint">O cliente e o status atual serão mantidos.</p><p id="reschedule-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-reschedule" class="secondary" type="button">Voltar</button><button id="save-reschedule" class="primary" type="submit"><span id="save-reschedule-label">Salvar novo horário</span><span>→</span></button></div></form></section>
+    </div>
+    <div id="appointment-detail-modal" class="modal-backdrop" hidden><section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="appointment-detail-title"><div class="modal-head"><div><p class="eyebrow">DETALHES DO ATENDIMENTO</p><h2 id="appointment-detail-title">Atendimento</h2><p id="appointment-detail-subtitle" class="modal-subtitle"></p></div><button id="close-appointment-detail" class="icon-button" type="button" aria-label="Fechar">×</button></div><div id="appointment-detail-content" class="appointment-detail-content"></div><label class="detail-notes-editor">Observações<textarea id="appointment-detail-notes" maxlength="1000" rows="4" placeholder="Preferências, atrasos ou instruções"></textarea></label><p id="appointment-detail-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="save-appointment-notes" class="secondary" type="button">Salvar observações</button><button id="appointment-detail-whatsapp" class="primary" type="button"><span>Conversar no WhatsApp</span><span>→</span></button></div></section></div>
+    <div id="person-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="person-title">
+        <div class="modal-head"><div><p id="person-eyebrow" class="eyebrow"></p><h2 id="person-title"></h2></div><button id="close-person" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="person-form">
+          <label>Nome completo<input id="person-name" type="text" minlength="2" maxlength="120" autocomplete="name" required placeholder="Digite o nome completo" /></label>
+          <label>Telefone<input id="person-phone" type="tel" minlength="8" maxlength="30" autocomplete="tel" required placeholder="(11) 99999-9999" /></label>
+          <label id="person-notes-field">Observações e preferências<textarea id="person-notes" maxlength="1000" rows="4" placeholder="Ex.: corte habitual, restrições ou preferências do cliente"></textarea></label>
+          <label id="person-birth-date-field">Data de nascimento<input id="person-birth-date" type="date" /></label>
+          <p id="person-error" class="form-error" role="alert"></p>
+          <div class="modal-actions"><button id="cancel-person" class="secondary" type="button">Voltar</button><button id="save-person" class="primary" type="submit"><span id="save-person-label">Cadastrar</span><span>→</span></button></div>
+        </form>
+      </section>
+    </div>
+    <div id="history-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="history-title"><div class="modal-head"><div><p class="eyebrow">FICHA DO CLIENTE</p><h2 id="history-title">Histórico</h2><p id="history-phone" class="modal-subtitle"></p></div><button id="close-history" class="icon-button" type="button" aria-label="Fechar">×</button></div><div id="history-notes"></div><div id="history-loyalty"></div><div id="history-stats" class="history-stats"></div><section class="table-card"><div class="table-head"><h3>Atendimentos</h3><span id="history-count"></span></div><div id="history-list"></div></section></section>
+    </div>
+    <div id="schedule-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="schedule-title">
+        <div class="modal-head"><div><p class="eyebrow">JORNADA SEMANAL</p><h2 id="schedule-title">Configurar horários</h2><p id="schedule-professional" class="modal-subtitle"></p></div><button id="close-schedule" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="schedule-form">
+          <fieldset><legend>Dias de atendimento</legend><div class="weekday-grid">
+            <label><input type="checkbox" name="weekday" value="0" checked /><span>Seg</span></label>
+            <label><input type="checkbox" name="weekday" value="1" checked /><span>Ter</span></label>
+            <label><input type="checkbox" name="weekday" value="2" checked /><span>Qua</span></label>
+            <label><input type="checkbox" name="weekday" value="3" checked /><span>Qui</span></label>
+            <label><input type="checkbox" name="weekday" value="4" checked /><span>Sex</span></label>
+            <label><input type="checkbox" name="weekday" value="5" checked /><span>Sáb</span></label>
+            <label><input type="checkbox" name="weekday" value="6" /><span>Dom</span></label>
+          </div></fieldset>
+          <label class="toggle-field"><input id="custom-schedule" type="checkbox" /><span>Usar horários diferentes em cada dia</span></label>
+          <div id="schedule-default-fields"><div class="form-grid"><label>Início<input id="schedule-start" type="time" value="09:00" required /></label><label>Fim<input id="schedule-end" type="time" value="18:00" required /></label></div><label>Duração de cada atendimento<select id="schedule-duration"><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">60 minutos</option></select></label><fieldset class="break-fields"><legend>Pausa opcional</legend><div class="form-grid"><label>Início da pausa<input id="schedule-break-start" type="time" /></label><label>Fim da pausa<input id="schedule-break-end" type="time" /></label></div></fieldset></div>
+          <div id="schedule-custom-fields" class="schedule-custom-fields" hidden></div>
+          <label>Comissão do profissional (%)<input id="barber-commission" type="number" min="0" max="100" step="1" value="0" required /></label>
+          <p id="schedule-hint" class="form-hint">A jornada será aplicada a todos os dias selecionados.</p><p id="schedule-error" class="form-error" role="alert"></p>
+          <div class="modal-actions"><button id="cancel-schedule" class="secondary" type="button">Voltar</button><button id="save-schedule" class="primary" type="submit"><span id="save-schedule-label">Salvar alterações</span><span>→</span></button></div>
+        </form>
+      </section>
+    </div>
+    <div id="time-off-modal" class="modal-backdrop" hidden><section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="time-off-title"><div class="modal-head"><div><p class="eyebrow">INDISPONIBILIDADE</p><h2 id="time-off-title">Bloquear agenda</h2><p id="time-off-professional" class="modal-subtitle"></p></div><button id="close-time-off" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="time-off-form"><label>Motivo<input id="time-off-reason" minlength="2" maxlength="200" required placeholder="Ex.: Folga, almoço ou compromisso" /></label><div class="form-grid"><label>Início<input id="time-off-start" type="datetime-local" required /></label><label>Fim<input id="time-off-end" type="datetime-local" required /></label></div><p id="time-off-error" class="form-error" role="alert"></p><button id="save-time-off" class="primary" type="submit"><span id="save-time-off-label">Criar bloqueio</span><span>→</span></button></form><section class="time-off-section"><h3>Bloqueios cadastrados</h3><div id="time-off-list"><div class="empty">Nenhum bloqueio.</div></div></section></section></div>
+    <div id="service-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="service-title">
+        <div class="modal-head"><div><p class="eyebrow">CATÁLOGO</p><h2 id="service-title">Novo serviço</h2></div><button id="close-service" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="service-form"><label>Nome<input id="service-name" minlength="2" maxlength="120" required placeholder="Ex.: Corte masculino" /></label><div class="form-grid"><label>Duração<select id="service-duration"><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60">60 minutos</option><option value="90">90 minutos</option></select></label><label>Preço (R$)<input id="service-price" type="number" min="0" step="0.01" required placeholder="50,00" /></label></div><label>Descrição<textarea id="service-description" rows="3" maxlength="1000" placeholder="Detalhes opcionais"></textarea></label><p id="service-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-service" class="secondary" type="button">Voltar</button><button id="save-service" class="primary" type="submit"><span id="save-service-label">Cadastrar serviço</span><span>→</span></button></div></form>
+      </section>
+    </div>
+    <div id="payment-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="payment-title"><div class="modal-head"><div><p class="eyebrow">ENCERRAR ATENDIMENTO</p><h2 id="payment-title">Registrar pagamento</h2><p id="payment-summary" class="modal-subtitle"></p></div><button id="close-payment" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="payment-form"><label>Forma de pagamento<select id="payment-method" required><option value="pix">Pix</option><option value="cash">Dinheiro</option><option value="credit_card">Cartão de crédito</option><option value="debit_card">Cartão de débito</option></select></label><p id="payment-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-payment" class="secondary" type="button">Voltar</button><button id="save-payment" class="primary" type="submit"><span id="save-payment-label">Concluir atendimento</span><span>→</span></button></div></form></section>
+    </div>
+    <div id="expense-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="expense-title">
+        <div class="modal-head"><div><p class="eyebrow">CONTROLE FINANCEIRO</p><h2 id="expense-title">Nova despesa</h2></div><button id="close-expense" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="expense-form"><div class="form-grid"><label>Categoria<select id="expense-category" required><option value="rent">Aluguel</option><option value="supplies">Materiais</option><option value="utilities">Contas</option><option value="marketing">Marketing</option><option value="taxes">Impostos</option><option value="other">Outros</option></select></label><label>Data<input id="expense-date" type="date" required /></label></div><label>Descrição<input id="expense-description" minlength="2" maxlength="500" required placeholder="Ex.: Compra de produtos" /></label><label>Valor (R$)<input id="expense-amount" type="number" min="0.01" step="0.01" required placeholder="150,00" /></label><label class="toggle-field"><input id="expense-fixed" type="checkbox" /> Despesa fixa mensal</label><p class="form-hint">Use para aluguel, internet, energia e outros custos recorrentes.</p><p id="expense-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-expense" class="secondary" type="button">Voltar</button><button id="save-expense" class="primary" type="submit"><span id="save-expense-label">Cadastrar despesa</span><span>→</span></button></div></form>
+      </section>
+    </div>
+    <div id="toast" role="status"></div>
+    <script src="/dashboard/app.js?v=20260920-66" defer></script>
+  </body>
+</html>

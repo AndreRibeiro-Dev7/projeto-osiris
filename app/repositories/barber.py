@@ -37,8 +37,20 @@ class BarberRepository:
         )
         return list((await self._session.scalars(statement)).all())
 
-    async def create(self, *, business_id: UUID, full_name: str, phone: str) -> Barber:
+    async def create(
+        self,
+        *,
+        business_id: UUID,
+        full_name: str,
+        phone: str,
+        commission_percentage: int = 0,
+    ) -> Barber:
         """Add a new barber to the current unit of work."""
-        barber = Barber(business_id=business_id, full_name=full_name, phone=phone)
+        barber = Barber(
+            business_id=business_id,
+            full_name=full_name,
+            phone=phone,
+            commission_percentage=commission_percentage,
+        )
         self._session.add(barber)
         return barber

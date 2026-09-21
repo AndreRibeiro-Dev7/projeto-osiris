@@ -36,6 +36,8 @@ class BarberSchedule(Base):
     weekday: Mapped[int] = mapped_column(Integer, nullable=False)
     starts_at: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)
     ends_at: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)
+    break_starts_at: Mapped[time | None] = mapped_column(Time(timezone=False), nullable=True)
+    break_ends_at: Mapped[time | None] = mapped_column(Time(timezone=False), nullable=True)
     slot_duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
 
     barber: Mapped[Barber] = relationship(back_populates="schedules")

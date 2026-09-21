@@ -8,29 +8,51 @@ O objetivo do Osiris é conectar uma API de agendamentos a um agente de IA capaz
 
 ## Status atual
 
-O núcleo de agendamento e disponibilidade está funcional. O fluxo completo foi validado pela API:
+O Osiris possui um **MVP operacional completo** para gestão de barbearias. O
+fluxo principal foi validado de ponta a ponta:
 
 ```text
 Horário livre → agendamento criado → horário removido
 → agendamento cancelado → horário liberado novamente
 ```
 
-A implementação está documentada e coberta por **19 testes automatizados**.
+A aplicação já reúne painel do proprietário, agenda, clientes, equipe, catálogo
+de serviços, agendamento público, assistente de IA e gestão financeira. A
+implementação está coberta por **30 testes automatizados**.
 
 ## Funcionalidades implementadas
 
-- Cadastro e consulta de empresas.
-- Cadastro e listagem de barbeiros.
-- Cadastro e listagem de clientes.
-- Criação de agendamentos com validação de referências.
-- Proteção contra conflito de horários.
-- Consulta da agenda diária de cada barbeiro.
-- Confirmação e cancelamento de agendamentos.
-- Configuração da jornada semanal por profissional.
-- Geração de horários livres em intervalos configuráveis.
-- Tratamento de fuso horário por estabelecimento.
-- Remoção automática de horários ocupados.
-- Liberação automática do horário após cancelamento.
+### Agenda e operação
+
+- Cadastro de empresas, profissionais, serviços e clientes.
+- Jornada semanal, folgas, bloqueios e duração individual por profissional.
+- Disponibilidade calculada com prevenção de conflitos e tratamento de fuso.
+- Criação, confirmação, conclusão e cancelamento de agendamentos.
+- Agendamento público e reserva pela IA após confirmação do cliente.
+- Agenda diária, histórico do cliente e acompanhamento de comparecimento.
+
+### Painel e financeiro
+
+- Painel responsivo com visão geral, indicadores e pendências importantes.
+- Receitas, pagamentos, despesas fixas e variáveis, vencimentos e baixas.
+- Comissões individuais por profissional.
+- Metas mensais com compensação de superávit entre os meses.
+- Gráficos financeiros com período, agrupamento, zoom e movimentação.
+- Comparação de vários meses e relatório analítico escrito.
+- Exportação de relatório financeiro formatado em Excel.
+
+### Relacionamento e integrações
+
+- Segmentação da carteira, fidelização, aniversários e histórico de clientes.
+- Assistente baseado na OpenAI Responses API e nos dados reais da agenda.
+- Confirmação de alteração de e-mail por código enviado pelo Resend.
+- Estrutura preparada para WhatsApp e Google Calendar.
+
+### Segurança e administração
+
+- Login de proprietários com OAuth2 e tokens JWT com expiração.
+- Senhas protegidas com Argon2 e dados isolados por barbearia.
+- Configurações da empresa e da conta atualizadas pelo painel.
 - Documentação interativa com OpenAPI/Swagger.
 
 ## Disponibilidade
@@ -127,6 +149,7 @@ app/
 - Alembic
 - Docker Compose
 - Pydantic
+- OpenAI Responses API
 - Pytest
 - Ruff, Black e MyPy
 
@@ -144,6 +167,7 @@ fastapi dev app/main.py
 
 Acesse:
 
+- Painel do proprietário: `http://127.0.0.1:8000/dashboard/`
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/api/v1/health`
 - Banco de dados: `http://127.0.0.1:8000/api/v1/health/database`
@@ -157,15 +181,27 @@ black --check app tests
 mypy app tests
 ```
 
-Estado registrado nesta entrega: **19 testes automatizados aprovados**.
+Estado registrado nesta entrega: **30 testes automatizados aprovados**.
 
 ## Próximos passos
 
-- Cadastrar jornadas para os demais dias da semana.
-- Implementar o agente de IA que consultará a disponibilidade.
-- Integrar o atendimento pelo WhatsApp.
-- Adicionar autenticação e autorização.
-- Evoluir observabilidade, logs e implantação.
+O produto funcional está pronto. As próximas etapas são voltadas à publicação
+e à operação comercial:
+
+- Implantar aplicação e banco gerenciado com domínio próprio e HTTPS.
+- Configurar backups automáticos e testar a restauração do banco.
+- Adicionar logs centralizados, monitoramento e alertas de indisponibilidade.
+- Concluir a integração oficial com WhatsApp e calendário.
+- Usar domínio verificado para e-mails e implementar recuperação de senha.
+- Ampliar testes de autorização, isolamento, interface e carga.
+- Consolidar proteção de dados, auditoria e limites de requisição.
+- Preparar onboarding, planos, cobrança e suporte ao cliente.
+
+O roteiro detalhado está em
+[Checklist para produção](./docs/production-checklist.md).
+As instruções técnicas estão no
+[Guia de publicação](./docs/deployment.md).
+O repositório também inclui um `render.yaml` para a primeira homologação online.
 
 ## Autor
 

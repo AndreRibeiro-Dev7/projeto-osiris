@@ -23,3 +23,15 @@ class InactiveBarberError(Exception):
 
 class InvalidAppointmentStatusTransitionError(Exception):
     """Raised when an appointment cannot transition to the requested status."""
+
+
+class LoyaltyRewardUnavailableError(Exception):
+    """Raised when a customer has no loyalty reward available to redeem."""
+
+
+class MissingAIConfigurationError(Exception):
+    """Raised when the AI provider is not configured for runtime use."""
+
+
+class AIProviderError(Exception):
+    """Raised when the configured AI provider cannot generate a response."""

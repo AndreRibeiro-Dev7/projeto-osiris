@@ -24,8 +24,24 @@ class BusinessRepository:
         result = await self._session.scalars(statement)
         return result.one_or_none()
 
-    async def create(self, *, name: str, phone: str, timezone: str) -> Business:
+    async def create(
+        self,
+        *,
+        name: str,
+        phone: str,
+        timezone: str,
+        loyalty_enabled: bool,
+        loyalty_target: int,
+        loyalty_reward: str,
+    ) -> Business:
         """Add a new business to the current unit of work."""
-        business = Business(name=name, phone=phone, timezone=timezone)
+        business = Business(
+            name=name,
+            phone=phone,
+            timezone=timezone,
+            loyalty_enabled=loyalty_enabled,
+            loyalty_target=loyalty_target,
+            loyalty_reward=loyalty_reward,
+        )
         self._session.add(business)
         return business

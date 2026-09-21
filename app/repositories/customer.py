@@ -1,5 +1,6 @@
 """Database queries for customers."""
 
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,6 +19,13 @@ class CustomerRepository:
         """Return a customer by primary key when it exists."""
         return await self._session.get(Customer, customer_id)
 
+    async def get_by_id_for_update(self, customer_id: UUID) -> Customer | None:
+        """Return and lock a customer while redeeming a loyalty reward."""
+        result = await self._session.scalars(
+            select(Customer).where(Customer.id == customer_id).with_for_update()
+        )
+        return result.one_or_none()
+
     async def get_by_business_and_phone(self, business_id: UUID, phone: str) -> Customer | None:
         """Return a customer by their business-scoped phone."""
         statement = select(Customer).where(
@@ -33,8 +41,22 @@ class CustomerRepository:
         )
         return list((await self._session.scalars(statement)).all())
 
-    async def create(self, *, business_id: UUID, full_name: str, phone: str) -> Customer:
+    async def create(
+        self,
+        *,
+        business_id: UUID,
+        full_name: str,
+        phone: str,
+        notes: str | None,
+        birth_date: date | None,
+    ) -> Customer:
         """Add a new customer to the current unit of work."""
-        customer = Customer(business_id=business_id, full_name=full_name, phone=phone)
+        customer = Customer(
+            business_id=business_id,
+            full_name=full_name,
+            phone=phone,
+            notes=notes,
+            birth_date=birth_date,
+        )
         self._session.add(customer)
         return customer

@@ -4,8 +4,8 @@ from pydantic import ValidationError
 from app.schemas.appointment import AppointmentCreate
 from app.schemas.availability import BarberScheduleUpsert
 from app.schemas.barber import BarberCreate
-from app.schemas.business import BusinessCreate
-from app.schemas.customer import CustomerCreate
+from app.schemas.business import BusinessCreate, BusinessUpdate
+from app.schemas.customer import CustomerCreate, CustomerUpdate
 
 
 @pytest.mark.parametrize(
@@ -44,4 +44,22 @@ def test_barber_schedule_rejects_an_invalid_working_window() -> None:
                 "ends_at": "09:00:00",
                 "slot_duration_minutes": 30,
             }
+        )
+
+
+def test_customer_update_validates_contact_data() -> None:
+    customer = CustomerUpdate(full_name="André Ribeiro", phone="11999999999")
+
+    assert customer.full_name == "André Ribeiro"
+    assert customer.phone == "11999999999"
+
+
+def test_business_loyalty_target_must_be_between_two_and_fifty() -> None:
+    with pytest.raises(ValidationError):
+        BusinessUpdate(
+            name="Barbearia Osiris",
+            phone="11999999999",
+            timezone="America/Sao_Paulo",
+            loyalty_target=1,
+            loyalty_reward="Corte grátis",
         )

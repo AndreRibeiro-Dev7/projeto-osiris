@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#101418"/><title>Agendamento online — Osiris</title><link rel="stylesheet" href="booking.css"/><link rel="stylesheet" href="manage.css"/></head>
+<body><header><div class="brand"><i>O</i><span>OSIRIS</span></div><span>AGENDAMENTO ONLINE</span></header><main>
+  <section class="intro"><p>RESERVE SEU HORÁRIO</p><h1 id="business-name">Carregando...</h1><span>Escolha o serviço, profissional e o melhor horário para você.</span></section>
+  <section id="booking-card" class="card" hidden><div class="steps"><b class="active">1</b><i></i><b>2</b><i></i><b>3</b></div><form id="booking-form">
+    <div class="grid"><label>Serviço<select id="service" required></select></label><label>Profissional<select id="barber" required></select></label><label>Data<input id="date" type="date" required/></label></div>
+    <div class="slot-section"><div><h2>Horários disponíveis</h2><span id="slot-help">Selecione as opções acima.</span></div><div id="slots" class="slots"></div></div>
+    <div id="customer-fields" class="customer"><h2>Seus dados</h2><div class="grid"><label>Nome completo<input id="name" minlength="2" maxlength="120" required autocomplete="name"/></label><label>WhatsApp<input id="phone" minlength="8" maxlength="30" required autocomplete="tel" placeholder="(11) 99999-9999"/></label></div><label>Observação (opcional)<textarea id="notes" maxlength="1000" rows="3"></textarea></label></div>
+    <p id="error" class="error"></p><button id="submit" type="submit" disabled><span>Confirmar agendamento</span><span>→</span></button>
+  </form></section>
+  <section id="success" class="success" hidden><div class="status-icon">✓</div><p>AGENDAMENTO CONFIRMADO</p><h2>Seu horário está reservado!</h2><span id="success-detail"></span><div class="manage-link"><input id="cancellation-link" readonly/><button id="copy-cancellation-link" type="button">Copiar link de cancelamento</button></div><small>Guarde este link caso precise consultar ou cancelar a reserva.</small><button id="new-booking">Fazer outro agendamento</button></section>
+  <section id="manage" class="success manage" hidden><div id="manage-icon" class="status-icon">✓</div><p>MINHA RESERVA</p><h2 id="manage-title">Carregando...</h2><span id="manage-detail"></span><div class="manage-actions"><button id="reschedule-booking" type="button">Reagendar</button><button id="confirm-booking" class="confirm" type="button">Confirmar presença</button><button id="cancel-booking" class="danger" type="button">Cancelar agendamento</button></div></section>
+  <section id="page-error" class="page-error" hidden><h2>Não foi possível abrir o agendamento</h2><p id="page-error-message"></p></section>
+</main><footer>Agendamento seguro por Projeto Osiris</footer><script src="booking.js"></script></body></html>

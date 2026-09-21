@@ -9,7 +9,7 @@ from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
 from app.models.barber import Barber
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
-from app.schemas.barber import BarberCreate
+from app.schemas.barber import BarberCreate, BarberUpdate
 
 
 class BarberService:
@@ -46,3 +46,30 @@ class BarberService:
         if await self._businesses.get_by_id(business_id) is None:
             raise ResourceNotFoundError("Business not found.")
         return await self._barbers.list_by_business(business_id)
+
+    async def update(
+        self, business_id: UUID, barber_id: UUID, payload: BarberUpdate
+    ) -> Barber:
+        """Update settings for a professional belonging to the business."""
+        barber = await self._barbers.get_by_id(barber_id)
+        if barber is None or barber.business_id != business_id:
+            raise ResourceNotFoundError("Barber not found.")
+        if payload.phone is not None:
+            phone_owner = await self._barbers.get_by_business_and_phone(
+                business_id, payload.phone
+            )
+            if phone_owner is not None and phone_owner.id != barber.id:
+                raise DuplicateResourceError(
+                    "A barber with this phone already exists in this business."
+                )
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(barber, field, value)
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError(
+                "A barber with this phone already exists in this business."
+            ) from error
+        await self._session.refresh(barber)
+        return barber
