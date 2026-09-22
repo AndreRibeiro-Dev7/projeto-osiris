@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-luna"
     jwt_secret_key: str = ""
+    owner_bootstrap_enabled: bool = False
     owner_bootstrap_token: str = ""
     access_token_expire_minutes: int = 60
     resend_api_key: str = ""

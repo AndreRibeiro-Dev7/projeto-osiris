@@ -30,13 +30,18 @@ router = APIRouter(prefix="/auth")
 
 
 def bootstrap_is_allowed(
-    *, environment: str, configured_token: str, received_token: str | None
+    *,
+    environment: str,
+    enabled: bool,
+    configured_token: str,
+    received_token: str | None,
 ) -> bool:
     """Allow local setup or a production setup request bearing the secret token."""
     if environment == "development":
         return True
     return bool(
-        configured_token
+        enabled
+        and configured_token
         and received_token
         and hmac.compare_digest(configured_token, received_token)
     )
@@ -52,6 +57,7 @@ async def bootstrap_owner(
     settings = get_settings()
     if not bootstrap_is_allowed(
         environment=settings.environment,
+        enabled=settings.owner_bootstrap_enabled,
         configured_token=settings.owner_bootstrap_token,
         received_token=setup_token,
     ):

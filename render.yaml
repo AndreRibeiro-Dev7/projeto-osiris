@@ -26,6 +26,8 @@ services:
         generateValue: true
       - key: OWNER_BOOTSTRAP_TOKEN
         generateValue: true
+      - key: OWNER_BOOTSTRAP_ENABLED
+        value: "false"
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "60"
       - key: OPENAI_MODEL

@@ -89,6 +89,11 @@ O `OWNER_BOOTSTRAP_TOKEN` também é gerado automaticamente e protege a criaçã
 do primeiro proprietário. Depois que uma empresa já possui um proprietário, o
 endpoint recusa novas tentativas para ela.
 
+O Blueprint mantém `OWNER_BOOTSTRAP_ENABLED=false`. Para uma instalação nova,
+altere temporariamente a variável para `true`, crie o primeiro proprietário e
+retorne imediatamente para `false`. Com a variável desativada, o endpoint não
+aceita requisições em produção mesmo que alguém conheça um token antigo.
+
 O Blueprint começa nos planos gratuitos para permitir a primeira homologação.
 Antes de atender uma barbearia real, altere o serviço e o banco para planos com
 disponibilidade e retenção adequadas, além de configurar backup restaurável.
