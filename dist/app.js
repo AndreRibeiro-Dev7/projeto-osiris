@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -13,6 +13,19 @@ async function request(path, options = {}) {
 }
 
 function showToast(message) { const toast = $("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 2600); }
+function closeConfirmation(result = false) { $("confirmation-modal").hidden = true; document.body.classList.remove("modal-open"); const resolve = state.confirmationResolver; state.confirmationResolver = null; if (resolve) resolve(result); }
+function confirmAction({ eyebrow, title, message, detail, confirmLabel }) {
+  if (state.confirmationResolver) closeConfirmation(false);
+  $("confirmation-eyebrow").textContent = eyebrow;
+  $("confirmation-title").textContent = title;
+  $("confirmation-message").textContent = message;
+  $("confirmation-detail").textContent = detail;
+  $("confirmation-submit-label").textContent = confirmLabel;
+  $("confirmation-modal").hidden = false;
+  document.body.classList.add("modal-open");
+  setTimeout(() => $("confirmation-submit").focus(), 0);
+  return new Promise((resolve) => { state.confirmationResolver = resolve; });
+}
 function initials(name) { return name.split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase(); }
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]); }
 function statusLabel(status) { return ({ scheduled: "Agendado", confirmed: "Confirmado", cancelled: "Cancelado", completed: "Concluído", no_show: "Não compareceu" })[status] || status; }
@@ -103,6 +116,7 @@ async function loadHome() {
       request(`/businesses/${state.me.business_id}/reports/financial?date_from=${monthStart}&date_to=${today}`),
       request(`/businesses/${state.me.business_id}/expenses?date_from=${monthStart}&date_to=${monthEnd}`),
     ]);
+    state.homeExpenses = monthlyExpenses;
     $("home-revenue").textContent = formatMoney(report.total_revenue_cents);
     const goal = state.business.monthly_revenue_goal_cents || 0;
     $("home-goal").textContent = goal ? `${Math.min(100, Math.round(report.total_revenue_cents / goal * 100))}% da meta mensal` : "meta mensal não definida";
@@ -455,7 +469,15 @@ function renderExpenses(items) {
 }
 
 async function markExpensePaid(id) {
-  if (!window.confirm("Confirmar que esta despesa foi paga?")) return;
+  const expense = [...state.expensePeriodItems, ...state.homeExpenses].find((item) => item.id === id);
+  const confirmed = await confirmAction({
+    eyebrow: "CONTROLE FINANCEIRO",
+    title: "Confirmar pagamento",
+    detail: expense ? `${expense.description} · ${formatMoney(expense.amount_cents)}` : "Despesa selecionada",
+    message: "Esta despesa será registrada como paga e os indicadores financeiros serão atualizados.",
+    confirmLabel: "Confirmar como paga",
+  });
+  if (!confirmed) return;
   try {
     await request(`/businesses/${state.me.business_id}/expenses/${id}/paid`, { method: "PATCH" });
     showToast("Pagamento da despesa confirmado.");
@@ -464,7 +486,15 @@ async function markExpensePaid(id) {
 }
 
 async function markExpensePending(id) {
-  if (!window.confirm("Marcar esta despesa novamente como pendente?")) return;
+  const expense = [...state.expensePeriodItems, ...state.homeExpenses].find((item) => item.id === id);
+  const confirmed = await confirmAction({
+    eyebrow: "CONTROLE FINANCEIRO",
+    title: "Reabrir pagamento",
+    detail: expense ? `${expense.description} · ${formatMoney(expense.amount_cents)}` : "Despesa selecionada",
+    message: "O pagamento será removido e esta despesa voltará a aparecer como pendente.",
+    confirmLabel: "Marcar como pendente",
+  });
+  if (!confirmed) return;
   try {
     await request(`/businesses/${state.me.business_id}/expenses/${id}/pending`, { method: "PATCH" });
     showToast("Despesa marcada como pendente.");
@@ -985,6 +1015,7 @@ chartViewport.addEventListener("pointerup", (event) => { if (!chartDragStart) re
 chartViewport.addEventListener("pointercancel", () => { chartDragStart = null; chartViewport.classList.remove("dragging"); });
 chartViewport.addEventListener("wheel", (event) => { if (!event.ctrlKey) return; event.preventDefault(); const rect = chartViewport.getBoundingClientRect(), focus = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)); applyFinancialChartZoom(state.financialChartZoom + (event.deltaY < 0 ? .5 : -.5), focus); }, { passive: false });
 $("new-expense").addEventListener("click", openExpenseModal); $("close-expense").addEventListener("click", closeExpenseModal); $("cancel-expense").addEventListener("click", closeExpenseModal); $("expense-form").addEventListener("submit", createExpense); $("expense-modal").addEventListener("click", (event) => { if (event.target === $("expense-modal")) closeExpenseModal(); }); $("expenses").addEventListener("click", (event) => { const pendingButton = event.target.closest("[data-expense-pending]"); if (pendingButton) { markExpensePending(pendingButton.dataset.expensePending); return; } const paidButton = event.target.closest("[data-expense-paid]"); if (paidButton) { markExpensePaid(paidButton.dataset.expensePaid); return; } const editButton = event.target.closest("[data-expense-edit]"); if (editButton) { openExpenseEditModal(editButton.dataset.expenseEdit); return; } const deleteButton = event.target.closest("[data-expense-id]"); if (deleteButton) deleteExpense(deleteButton.dataset.expenseId); });
+$("close-confirmation").addEventListener("click", () => closeConfirmation(false)); $("cancel-confirmation").addEventListener("click", () => closeConfirmation(false)); $("confirmation-submit").addEventListener("click", () => closeConfirmation(true)); $("confirmation-modal").addEventListener("click", (event) => { if (event.target === $("confirmation-modal")) closeConfirmation(false); }); document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("confirmation-modal").hidden) closeConfirmation(false); });
 $("expense-filter").addEventListener("change", () => renderExpenses(state.expensePeriodItems));
 $("refresh-expense-summary").addEventListener("click", loadExpensePeriod);
 $("compare-expense-months").addEventListener("click", compareExpenseMonths);
