@@ -7,6 +7,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.main import app
 
 
 def test_password_is_hashed_and_verified() -> None:
@@ -64,3 +65,15 @@ def test_owner_bootstrap_requires_matching_token_in_production() -> None:
         configured_token=token,
         received_token=token,
     )
+
+
+def test_responses_include_browser_security_headers() -> None:
+    from fastapi.testclient import TestClient
+
+    response = TestClient(app).get("/api/v1/health")
+
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert "frame-ancestors 'none'" in response.headers["content-security-policy"]
+    assert "camera=()" in response.headers["permissions-policy"]
