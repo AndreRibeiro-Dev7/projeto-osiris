@@ -10,6 +10,8 @@ from app.models.business import Business
 from app.repositories.business import BusinessRepository
 from app.schemas.business import BusinessCreate, BusinessUpdate
 
+BUSINESS_PHONE_ALREADY_EXISTS = "Já existe uma empresa cadastrada com este telefone."
+
 
 class BusinessService:
     """Coordinate validation and persistence for businesses."""
@@ -21,14 +23,14 @@ class BusinessService:
     async def create(self, payload: BusinessCreate) -> Business:
         """Register a new business with a unique phone."""
         if await self._repository.get_by_phone(payload.phone):
-            raise DuplicateResourceError("A business with this phone already exists.")
+            raise DuplicateResourceError(BUSINESS_PHONE_ALREADY_EXISTS)
 
         business = await self._repository.create(**payload.model_dump())
         try:
             await self._session.commit()
         except IntegrityError as error:
             await self._session.rollback()
-            raise DuplicateResourceError("A business with this phone already exists.") from error
+            raise DuplicateResourceError(BUSINESS_PHONE_ALREADY_EXISTS) from error
 
         await self._session.refresh(business)
         return business
@@ -45,7 +47,7 @@ class BusinessService:
         business = await self.get(business_id)
         phone_owner = await self._repository.get_by_phone(payload.phone)
         if phone_owner is not None and phone_owner.id != business.id:
-            raise DuplicateResourceError("A business with this phone already exists.")
+            raise DuplicateResourceError(BUSINESS_PHONE_ALREADY_EXISTS)
 
         business.name = payload.name
         business.phone = payload.phone
@@ -58,6 +60,6 @@ class BusinessService:
             await self._session.commit()
         except IntegrityError as error:
             await self._session.rollback()
-            raise DuplicateResourceError("A business with this phone already exists.") from error
+            raise DuplicateResourceError(BUSINESS_PHONE_ALREADY_EXISTS) from error
         await self._session.refresh(business)
         return business
