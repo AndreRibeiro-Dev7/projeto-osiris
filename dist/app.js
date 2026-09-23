@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -45,21 +45,55 @@ async function boot() {
   } catch (error) { logout(); $("login-error").textContent = error.message; }
 }
 
+async function refreshReferenceData() {
+  const selectedBarber = $("barber-filter").value || "all";
+  [state.business, state.barbers, state.customers, state.customerPortfolio, state.services] = await Promise.all([
+    request(`/businesses/${state.me.business_id}`),
+    request(`/businesses/${state.me.business_id}/barbers`),
+    request(`/businesses/${state.me.business_id}/customers`),
+    request(`/businesses/${state.me.business_id}/customers/portfolio`),
+    request(`/businesses/${state.me.business_id}/services`),
+  ]);
+  $("business-name").textContent = state.business.name;
+  $("barber-filter").innerHTML = `<option value="all">Todos os profissionais</option>${state.barbers.map((barber) => `<option value="${barber.id}">${barber.full_name}</option>`).join("")}`;
+  $("barber-filter").value = state.barbers.some((barber) => barber.id === selectedBarber) ? selectedBarber : "all";
+  renderPeople();
+  renderCustomerRanking();
+}
+
+async function refreshActiveView() {
+  if (!state.token || !state.me || state.refreshInFlight || $("app-view").hidden || document.hidden) return;
+  state.refreshInFlight = true;
+  try {
+    await refreshReferenceData();
+    const view = document.querySelector(".nav-item.active")?.dataset.view || "inicio";
+    if (view === "inicio") await loadHome();
+    else if (view === "agenda") await loadAgenda();
+    else if (view === "financeiro") await loadFinancial();
+    else if (view === "clientes") await loadCustomerPortfolio();
+    else if (view === "fechamentos") await loadClosures();
+  } catch (error) { showToast(error.message); }
+  finally { state.refreshInFlight = false; }
+}
+
 async function loadHome() {
+  let appointments = state.appointments;
+  try { appointments = (await fetchAgendaSnapshot(localDate(), "all", false)).appointments; }
+  catch { /* Keep the last known snapshot if the network is temporarily unavailable. */ }
   const hour = new Date().getHours();
   $("home-greeting").textContent = `${hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"}, ${state.business.name}.`;
   const activeBarbers = state.barbers.filter((item) => item.is_active).length;
-  const confirmed = state.appointments.filter((item) => item.status === "confirmed").length;
-  $("home-appointments").textContent = state.appointments.length;
+  const confirmed = appointments.filter((item) => item.status === "confirmed").length;
+  $("home-appointments").textContent = appointments.length;
   $("home-confirmed").textContent = `${confirmed} confirmado${confirmed === 1 ? "" : "s"} para hoje`;
   $("home-customers").textContent = state.customers.length;
   $("home-barbers").textContent = activeBarbers;
-  const scheduled = state.appointments.filter((item) => item.status === "scheduled").length;
-  const noShows = state.appointments.filter((item) => item.status === "no_show").length;
+  const scheduled = appointments.filter((item) => item.status === "scheduled").length;
+  const noShows = appointments.filter((item) => item.status === "no_show").length;
   const alerts = [];
   if (scheduled) alerts.push({ icon: "!", title: `${scheduled} aguardando confirmação`, detail: "Confirme os horários antes do atendimento.", view: "agenda" });
   if (noShows) alerts.push({ icon: "!", title: `${noShows} não compareceu${noShows === 1 ? "" : "ram"}`, detail: "Revise as faltas registradas hoje.", view: "agenda" });
-  const upcoming = state.appointments.filter((item) => !["cancelled", "completed", "no_show"].includes(item.status)).slice(0, 5);
+  const upcoming = appointments.filter((item) => !["cancelled", "completed", "no_show"].includes(item.status)).slice(0, 5);
   $("home-next-appointments").innerHTML = upcoming.length ? upcoming.map((item) => { const customer = state.customers.find((entry) => entry.id === item.customer_id); const barber = state.barbers.find((entry) => entry.id === item.barber_id); const service = state.services.find((entry) => entry.id === item.service_id); return `<article class="home-appointment"><strong>${formatTime(item.starts_at)}</strong><div><strong>${customer?.full_name || "Cliente"}</strong><span>${service?.name || "Serviço"} · ${barber?.full_name || "Profissional"}</span></div><span class="badge ${item.status}">${statusLabel(item.status)}</span></article>`; }).join("") : '<div class="empty">Nenhum atendimento pendente para hoje.</div>';
   const today = localDate(), monthStart = `${today.slice(0, 8)}01`;
   const daysInMonth = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0).getDate();
@@ -100,13 +134,17 @@ function renderHomeAlerts(alerts) {
   $("home-alert-list").innerHTML = alerts.length ? alerts.map((alert) => alert.expenseId ? `<article class="home-alert ${alert.urgent ? "urgent" : ""}"><span>${alert.urgent ? "!" : alert.icon}</span><div><strong>${alert.title}</strong><small>${alert.detail}</small></div><button class="home-alert-pay" data-expense-paid="${alert.expenseId}" type="button">Confirmar paga</button></article>` : `<button class="home-alert" data-alert-view="${alert.view}" type="button"><span>${alert.icon}</span><div><strong>${alert.title}</strong><small>${alert.detail}</small></div><b>→</b></button>`).join("") : '<div class="home-alert-success"><span>✓</span><strong>Nenhuma pendência importante neste momento.</strong></div>';
 }
 
+async function fetchAgendaSnapshot(date, barberId = "all", includeAvailability = true) {
+  const selectedBarbers = barberId === "all" ? state.barbers.filter((item) => item.is_active) : state.barbers.filter((item) => item.id === barberId);
+  const results = await Promise.all(selectedBarbers.map(async (barber) => { const appointments = await request(`/businesses/${state.me.business_id}/barbers/${barber.id}/appointments?appointment_date=${date}`); const availability = includeAvailability ? await request(`/businesses/${state.me.business_id}/barbers/${barber.id}/availability?appointment_date=${date}`).catch(() => ({ slots: [] })) : { slots: [] }; return { appointments, free: availability.slots.length }; }));
+  return { appointments: results.flatMap((item) => item.appointments).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)), free: results.reduce((total, item) => total + item.free, 0) };
+}
+
 async function loadAgenda() {
   const barberId = $("barber-filter").value; const date = $("date-filter").value;
   if (!barberId) { renderAppointments([]); return; }
   try {
-    const selectedBarbers = barberId === "all" ? state.barbers.filter((item) => item.is_active) : state.barbers.filter((item) => item.id === barberId);
-    const results = await Promise.all(selectedBarbers.map(async (barber) => { const [appointments, availability] = await Promise.all([request(`/businesses/${state.me.business_id}/barbers/${barber.id}/appointments?appointment_date=${date}`), request(`/businesses/${state.me.business_id}/barbers/${barber.id}/availability?appointment_date=${date}`).catch(() => ({ slots: [] }))]); return { appointments, free: availability.slots.length }; }));
-    const appointments = results.flatMap((item) => item.appointments).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)); const free = results.reduce((total, item) => total + item.free, 0);
+    const { appointments, free } = await fetchAgendaSnapshot(date, barberId);
     state.appointments = appointments; $("stat-total").textContent = appointments.length; $("stat-confirmed").textContent = appointments.filter((a) => a.status === "confirmed").length; $("stat-free").textContent = free; $("stat-revenue").textContent = formatMoney(appointments.filter((a) => a.status === "completed").reduce((total, a) => total + (a.price_cents || 0), 0)); renderAppointments(appointments);
   } catch (error) { showToast(error.message); }
 }
@@ -614,7 +652,7 @@ async function rescheduleAppointment(event) {
   event.preventDefault(); $("reschedule-error").textContent = ""; $("save-reschedule").disabled = true; $("save-reschedule-label").textContent = "Salvando...";
   try {
     await request(`/businesses/${state.me.business_id}/appointments/${state.rescheduleAppointmentId}/reschedule`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ barber_id: $("reschedule-barber").value, service_id: $("reschedule-service").value, starts_at: $("reschedule-slot").value }) });
-    $("date-filter").value = $("reschedule-date").value; $("barber-filter").value = $("reschedule-barber").value; closeRescheduleModal(); showToast("Alterações salvas com sucesso."); await loadAgenda();
+    $("date-filter").value = $("reschedule-date").value; $("barber-filter").value = $("reschedule-barber").value; closeRescheduleModal(); showToast("Alterações salvas com sucesso."); await Promise.all([loadAgenda(), loadHome()]);
   } catch (error) { $("reschedule-error").textContent = error.message; }
   finally { $("save-reschedule").disabled = false; $("save-reschedule-label").textContent = "Salvar novo horário"; }
 }
@@ -761,7 +799,7 @@ async function createAppointment(event) {
   $("save-appointment").disabled = true; $("save-appointment-label").textContent = "Criando...";
   try {
     await request(`/businesses/${state.me.business_id}/appointments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ barber_id: $("appointment-barber").value, customer_id: $("appointment-customer").value, service_id: $("appointment-service").value, starts_at, ends_at, notes: $("appointment-notes").value.trim() || null }) });
-    $("date-filter").value = $("appointment-date").value; $("barber-filter").value = $("appointment-barber").value; closeAppointmentModal(); $("appointment-form").reset(); showToast("Agendamento criado com sucesso."); await loadAgenda();
+    $("date-filter").value = $("appointment-date").value; $("barber-filter").value = $("appointment-barber").value; closeAppointmentModal(); $("appointment-form").reset(); showToast("Agendamento criado com sucesso."); await Promise.all([loadAgenda(), loadHome()]);
   } catch (error) { $("appointment-error").textContent = error.message; }
   finally { $("save-appointment").disabled = false; $("save-appointment-label").textContent = "Criar agendamento"; }
 }
@@ -791,9 +829,9 @@ async function toggleService(id, isActive) {
 
 function openPaymentModal(id) { const appointment = state.appointments.find((a) => a.id === id); const service = state.services.find((s) => s.id === appointment?.service_id); state.paymentAppointmentId = id; $("payment-summary").textContent = `${service?.name || "Atendimento"} · ${formatMoney(appointment?.price_cents || 0)}`; $("payment-error").textContent = ""; $("payment-modal").hidden = false; document.body.classList.add("modal-open"); }
 function closePaymentModal() { $("payment-modal").hidden = true; document.body.classList.remove("modal-open"); }
-async function completeAppointment(event) { event.preventDefault(); $("payment-error").textContent = ""; $("save-payment").disabled = true; $("save-payment-label").textContent = "Concluindo..."; try { await request(`/businesses/${state.me.business_id}/appointments/${state.paymentAppointmentId}/complete`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_method: $("payment-method").value }) }); closePaymentModal(); showToast("Atendimento concluído e pagamento registrado."); await loadAgenda(); } catch (error) { $("payment-error").textContent = error.message; } finally { $("save-payment").disabled = false; $("save-payment-label").textContent = "Concluir atendimento"; } }
+async function completeAppointment(event) { event.preventDefault(); $("payment-error").textContent = ""; $("save-payment").disabled = true; $("save-payment-label").textContent = "Concluindo..."; try { await request(`/businesses/${state.me.business_id}/appointments/${state.paymentAppointmentId}/complete`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_method: $("payment-method").value }) }); closePaymentModal(); showToast("Atendimento concluído e pagamento registrado."); await Promise.all([loadAgenda(), loadHome()]); } catch (error) { $("payment-error").textContent = error.message; } finally { $("save-payment").disabled = false; $("save-payment-label").textContent = "Concluir atendimento"; } }
 
-async function changeStatus(action, id) { try { await request(`/businesses/${state.me.business_id}/appointments/${id}/${action}`, { method: "PATCH" }); showToast(action === "confirm" ? "Agendamento confirmado." : "Agendamento cancelado."); await loadAgenda(); } catch (error) { showToast(error.message); } }
+async function changeStatus(action, id) { try { await request(`/businesses/${state.me.business_id}/appointments/${id}/${action}`, { method: "PATCH" }); showToast(action === "confirm" ? "Agendamento confirmado." : "Agendamento cancelado."); await Promise.all([loadAgenda(), loadHome()]); } catch (error) { showToast(error.message); } }
 function normalizeWhatsAppPhone(value) { let phone = value.replace(/\D/g, ""); if (phone.startsWith("0")) phone = phone.slice(1); if (phone.length === 10 || phone.length === 11) phone = `55${phone}`; return phone; }
 function inviteCustomerBack(customerId) {
   const customer = state.customers.find((item) => item.id === customerId); if (!customer) return;
@@ -958,7 +996,7 @@ $("generate-fixed-expenses").addEventListener("click", generateFixedExpenses);
 [$("report-from"), $("report-to")].forEach((input) => input.addEventListener("change", () => { state.financialReport = null; $("export-report").disabled = true; }));
 $("appointments").addEventListener("click", (event) => { const detail = event.target.closest("[data-detail-id]"); if (detail) { openAppointmentDetail(detail.dataset.detailId); return; } const reschedule = event.target.closest("[data-reschedule-id]"); if (reschedule) { openRescheduleModal(reschedule.dataset.rescheduleId); return; } const reminder = event.target.closest("[data-reminder-id]"); if (reminder) { sendWhatsAppReminder(reminder.dataset.reminderId); return; } const complete = event.target.closest("[data-complete-id]"); if (complete) { openPaymentModal(complete.dataset.completeId); return; } const button = event.target.closest("button[data-action]"); if (button) changeStatus(button.dataset.action, button.dataset.id); });
 $("close-appointment-detail").addEventListener("click", closeAppointmentDetail); $("appointment-detail-modal").addEventListener("click", (event) => { if (event.target === $("appointment-detail-modal")) closeAppointmentDetail(); }); $("appointment-detail-whatsapp").addEventListener("click", () => window.open(`https://wa.me/${normalizeWhatsAppPhone($("appointment-detail-whatsapp").dataset.phone)}`, "_blank", "noopener")); $("save-appointment-notes").addEventListener("click", saveAppointmentNotes);
-document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => { document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active")); button.classList.add("active"); document.querySelectorAll(".panel-view").forEach((p) => p.hidden = true); $(`${button.dataset.view}-panel`).hidden = false; document.querySelector("aside").classList.remove("open"); if (button.dataset.view === "financeiro") loadFinancial(); if (button.dataset.view === "clientes") loadCustomerPortfolio(); if (button.dataset.view === "fechamentos") loadClosures(); }));
+document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => { document.querySelectorAll(".nav-item").forEach((b) => b.classList.remove("active")); button.classList.add("active"); document.querySelectorAll(".panel-view").forEach((p) => p.hidden = true); $(`${button.dataset.view}-panel`).hidden = false; document.querySelector("aside").classList.remove("open"); refreshActiveView(); }));
 document.querySelectorAll("[data-home-view]").forEach((button) => button.addEventListener("click", () => document.querySelector(`.nav-item[data-view="${button.dataset.homeView}"]`).click()));
 document.querySelector("[data-home-action='appointment']").addEventListener("click", () => { document.querySelector('.nav-item[data-view="agenda"]').click(); openAppointmentModal(); });
 $("home-alert-list").addEventListener("click", (event) => { const paidButton = event.target.closest("[data-expense-paid]"); if (paidButton) { markExpensePaid(paidButton.dataset.expensePaid); return; } const alert = event.target.closest("[data-alert-view]"); if (alert) document.querySelector(`.nav-item[data-view="${alert.dataset.alertView}"]`).click(); });
@@ -989,4 +1027,7 @@ $("comparison-month-b").value = today.slice(0, 7);
 const previousMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 6, 1));
 $("comparison-month-a").value = previousMonth.toISOString().slice(0, 7);
 $("export-report").textContent = "Exportar Excel";
+window.setInterval(refreshActiveView, 30000);
+window.addEventListener("focus", refreshActiveView);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshActiveView(); });
 if (state.token) boot();
