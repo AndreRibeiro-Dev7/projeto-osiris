@@ -508,18 +508,24 @@ async function generateFixedExpenses() {
   const [year, month] = $("report-to").value.split("-").map(Number);
   const target = new Date(Date.UTC(year, month, 1));
   const targetMonth = target.toISOString().slice(0, 10);
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  const targetEnd = `${targetMonth.slice(0, 8)}${String(lastDay).padStart(2, "0")}`;
   const targetLabel = target.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
   const confirmed = await confirmAction({ eyebrow: "CONTROLE FINANCEIRO", title: "Gerar despesas fixas", detail: targetLabel, message: "As despesas fixas cadastradas serão lançadas nesse mês sem duplicar registros existentes.", confirmLabel: "Gerar despesas" });
   if (!confirmed) return;
+  const button = $("generate-fixed-expenses"); button.disabled = true; button.textContent = "Gerando...";
   try {
     const created = await request(`/businesses/${state.me.business_id}/expenses/fixed/generate?target_month=${targetMonth}`, { method: "POST" });
-    if (!created.length) { showToast("Nenhuma nova despesa fixa para gerar."); return; }
-    const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
     $("report-from").value = targetMonth;
-    $("report-to").value = `${targetMonth.slice(0, 8)}${String(lastDay).padStart(2, "0")}`;
-    showToast(`${created.length} despesa${created.length === 1 ? " fixa gerada" : "s fixas geradas"}.`);
+    $("report-to").value = targetEnd;
+    $("expense-summary-from").value = targetMonth;
+    $("expense-summary-to").value = targetEnd;
     await loadFinancial();
+    await loadExpensePeriod();
+    showToast(created.length ? `${created.length} despesa${created.length === 1 ? " fixa gerada" : "s fixas geradas"} para ${targetLabel}.` : `As despesas fixas de ${targetLabel} já estavam geradas. Período atualizado.`);
+    document.querySelector(".expense-card").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) { showToast(error.message); }
+  finally { button.disabled = false; button.textContent = "Gerar próximo mês"; }
 }
 
 function openExpenseModal() { state.editingExpenseId = null; $("expense-form").reset(); $("expense-title").textContent = "Nova despesa"; $("save-expense-label").textContent = "Cadastrar despesa"; $("expense-date").value = localDate(); $("expense-error").textContent = ""; $("expense-modal").hidden = false; document.body.classList.add("modal-open"); setTimeout(() => $("expense-description").focus(), 0); }
