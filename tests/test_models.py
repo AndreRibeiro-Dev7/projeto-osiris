@@ -30,3 +30,13 @@ def test_customer_loyalty_redemptions_cannot_be_negative() -> None:
     constraint_names = {constraint.name for constraint in customers.constraints}
 
     assert "ck_customers_loyalty_rewards_redeemed_non_negative" in constraint_names
+
+
+def test_users_support_restricted_barber_accounts() -> None:
+    users = Base.metadata.tables["users"]
+    constraint_names = {constraint.name for constraint in users.constraints}
+
+    assert "role" in users.columns
+    assert "barber_id" in users.columns
+    assert "ck_users_role" in constraint_names
+    assert users.columns["barber_id"].unique

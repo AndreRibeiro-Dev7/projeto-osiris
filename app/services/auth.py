@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
 from app.core.security import hash_password, verify_password
 from app.models.user import User
+from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
 from app.repositories.user import UserRepository
 
@@ -22,6 +23,7 @@ class AuthService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
         self._businesses = BusinessRepository(session)
+        self._barbers = BarberRepository(session)
         self._users = UserRepository(session)
 
     async def bootstrap_owner(self, *, business_id: UUID, email: str, password: str) -> User:
@@ -43,6 +45,41 @@ class AuthService:
         except IntegrityError as error:
             await self._session.rollback()
             raise DuplicateResourceError("The owner account could not be created.") from error
+        await self._session.refresh(user)
+        return user
+
+    async def create_barber_account(
+        self,
+        *,
+        owner: User,
+        barber_id: UUID,
+        email: str,
+        password: str,
+    ) -> User:
+        """Create a restricted login linked to one professional."""
+        if owner.role != "owner":
+            raise ResourceNotFoundError("Owner access is required.")
+        barber = await self._barbers.get_by_id(barber_id)
+        if barber is None or barber.business_id != owner.business_id:
+            raise ResourceNotFoundError("Barber not found.")
+        if await self._users.get_by_barber_id(barber_id) is not None:
+            raise DuplicateResourceError("This professional already has a login account.")
+        if await self._users.get_by_email(email) is not None:
+            raise DuplicateResourceError("An account with this email already exists.")
+        user = await self._users.create(
+            business_id=owner.business_id,
+            barber_id=barber_id,
+            email=email,
+            password_hash=hash_password(password),
+            role="barber",
+        )
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError(
+                "The professional account could not be created."
+            ) from error
         await self._session.refresh(user)
         return user
 
@@ -106,9 +143,7 @@ class AuthService:
             await self._session.commit()
         except IntegrityError as error:
             await self._session.rollback()
-            raise DuplicateResourceError(
-                "An account with this email already exists."
-            ) from error
+            raise DuplicateResourceError("An account with this email already exists.") from error
         await self._session.refresh(user)
         return user
 

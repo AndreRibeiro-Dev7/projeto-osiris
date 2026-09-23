@@ -1,8 +1,11 @@
 """Authentication API contracts."""
 
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field
+
+from app.models.appointment import AppointmentStatus, PaymentMethod
 
 
 class OwnerBootstrapRequest(BaseModel):
@@ -54,3 +57,53 @@ class CurrentUserResponse(BaseModel):
     id: UUID
     business_id: UUID
     email: EmailStr
+    role: str
+    barber_id: UUID | None = None
+
+
+class BarberAccountCreate(BaseModel):
+    """Credentials created by an owner for one professional."""
+
+    barber_id: UUID
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+
+
+class BarberAccountResponse(BaseModel):
+    """Safe representation of a professional login account."""
+
+    id: UUID
+    business_id: UUID
+    barber_id: UUID
+    email: EmailStr
+    is_active: bool
+
+
+class BarberProfileResponse(BaseModel):
+    """Identity and business data required by the restricted dashboard."""
+
+    business_id: UUID
+    business_name: str
+    timezone: str
+    barber_id: UUID
+    full_name: str
+    phone: str
+    commission_percentage: int
+
+
+class BarberAppointmentResponse(BaseModel):
+    """Appointment data visible to its assigned professional."""
+
+    id: UUID
+    public_token: UUID
+    customer_id: UUID
+    service_id: UUID | None
+    customer_name: str
+    customer_phone: str
+    service_name: str
+    starts_at: datetime
+    ends_at: datetime
+    status: AppointmentStatus
+    price_cents: int | None
+    payment_method: PaymentMethod | None
+    notes: str | None

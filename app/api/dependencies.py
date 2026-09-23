@@ -43,9 +43,9 @@ async def require_business_access(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Reject cross-tenant access even when the resource identifier exists."""
-    if current_user.business_id != business_id:
+    if current_user.business_id != business_id or current_user.role != "owner":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have access to this business.",
+            detail="Owner access is required for this business.",
         )
     return current_user

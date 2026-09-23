@@ -30,10 +30,19 @@ def test_availability_routes_are_exposed() -> None:
     assert "/api/v1/auth/me" in paths
 
 
+def test_restricted_barber_routes_are_exposed() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "/api/v1/auth/barber-accounts" in paths
+    assert "/api/v1/auth/barber/profile" in paths
+    assert "/api/v1/auth/barber/appointments" in paths
+    assert "/api/v1/auth/barber/appointments/{appointment_id}/confirm" in paths
+    assert "/api/v1/auth/barber/appointments/{appointment_id}/complete" in paths
+    assert "/api/v1/auth/barber/appointments/{appointment_id}/no-show" in paths
+
+
 def test_customer_update_route_is_exposed() -> None:
-    route = app.openapi()["paths"][
-        "/api/v1/businesses/{business_id}/customers/{customer_id}"
-    ]
+    route = app.openapi()["paths"]["/api/v1/businesses/{business_id}/customers/{customer_id}"]
 
     assert "patch" in route
     assert "404" in route["patch"]["responses"]
@@ -45,7 +54,4 @@ def test_customer_portfolio_routes_are_exposed() -> None:
 
     assert "/api/v1/businesses/{business_id}/customers/portfolio" in paths
     assert "/api/v1/businesses/{business_id}/customers.xlsx" in paths
-    assert (
-        "/api/v1/businesses/{business_id}/customers/{customer_id}/loyalty/redeem"
-        in paths
-    )
+    assert "/api/v1/businesses/{business_id}/customers/{customer_id}/loyalty/redeem" in paths

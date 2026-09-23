@@ -1,7 +1,9 @@
 """Owner authentication endpoints."""
 
 import hmac
+from datetime import date
 from typing import Annotated
+from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
@@ -14,8 +16,19 @@ from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
 from app.core.security import create_access_token
 from app.database.session import get_db_session
 from app.integrations.email_delivery import send_email_change_code
+from app.models.appointment import Appointment
+from app.models.customer import Customer
+from app.models.service import Service
 from app.models.user import User
+from app.repositories.appointment import AppointmentRepository
+from app.repositories.barber import BarberRepository
+from app.repositories.business import BusinessRepository
+from app.schemas.appointment import AppointmentCompleteRequest
 from app.schemas.auth import (
+    BarberAccountCreate,
+    BarberAccountResponse,
+    BarberAppointmentResponse,
+    BarberProfileResponse,
     CurrentUserResponse,
     EmailChangeConfirmRequest,
     EmailChangeRequest,
@@ -24,6 +37,7 @@ from app.schemas.auth import (
     PasswordChangeRequest,
     TokenResponse,
 )
+from app.services.appointment import AppointmentService
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth")
@@ -64,7 +78,13 @@ async def bootstrap_owner(
         raise HTTPException(status_code=404, detail="Not found.")
     try:
         user = await AuthService(session).bootstrap_owner(**payload.model_dump())
-        return CurrentUserResponse(id=user.id, business_id=user.business_id, email=user.email)
+        return CurrentUserResponse(
+            id=user.id,
+            business_id=user.business_id,
+            email=user.email,
+            role=user.role,
+            barber_id=user.barber_id,
+        )
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except DuplicateResourceError as error:
@@ -102,7 +122,178 @@ async def me(current_user: Annotated[User, Depends(get_current_user)]) -> Curren
         id=current_user.id,
         business_id=current_user.business_id,
         email=current_user.email,
+        role=current_user.role,
+        barber_id=current_user.barber_id,
     )
+
+
+@router.post(
+    "/barber-accounts",
+    response_model=BarberAccountResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_barber_account(
+    payload: BarberAccountCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberAccountResponse:
+    """Allow an owner to create a restricted account for one professional."""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required.")
+    try:
+        user = await AuthService(session).create_barber_account(
+            owner=current_user,
+            **payload.model_dump(),
+        )
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except DuplicateResourceError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    if user.barber_id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return BarberAccountResponse(
+        id=user.id,
+        business_id=user.business_id,
+        barber_id=user.barber_id,
+        email=user.email,
+        is_active=user.is_active,
+    )
+
+
+def require_barber_account(user: User) -> UUID:
+    """Return the linked professional or reject non-professional accounts."""
+    if user.role != "barber" or user.barber_id is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Barber access required.")
+    return user.barber_id
+
+
+@router.get("/barber/profile", response_model=BarberProfileResponse)
+async def barber_profile(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberProfileResponse:
+    """Return the identity shown in the restricted professional dashboard."""
+    barber_id = require_barber_account(current_user)
+    barber = await BarberRepository(session).get_by_id(barber_id)
+    business = await BusinessRepository(session).get_by_id(current_user.business_id)
+    if barber is None or business is None or barber.business_id != business.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found.")
+    return BarberProfileResponse(
+        business_id=business.id,
+        business_name=business.name,
+        timezone=business.timezone,
+        barber_id=barber.id,
+        full_name=barber.full_name,
+        phone=barber.phone,
+        commission_percentage=barber.commission_percentage,
+    )
+
+
+async def barber_appointment_response(
+    appointment: Appointment, session: AsyncSession
+) -> BarberAppointmentResponse:
+    customer = await session.get(Customer, appointment.customer_id)
+    service = await session.get(Service, appointment.service_id) if appointment.service_id else None
+    return BarberAppointmentResponse(
+        id=appointment.id,
+        public_token=appointment.public_token,
+        customer_id=appointment.customer_id,
+        service_id=appointment.service_id,
+        customer_name=customer.full_name if customer else "Cliente",
+        customer_phone=customer.phone if customer else "",
+        service_name=service.name if service else "Atendimento",
+        starts_at=appointment.starts_at,
+        ends_at=appointment.ends_at,
+        status=appointment.status,
+        price_cents=appointment.price_cents,
+        payment_method=appointment.payment_method,
+        notes=appointment.notes,
+    )
+
+
+@router.get("/barber/appointments", response_model=list[BarberAppointmentResponse])
+async def barber_appointments(
+    appointment_date: date,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[BarberAppointmentResponse]:
+    """List only the appointments assigned to the authenticated professional."""
+    barber_id = require_barber_account(current_user)
+    appointments = await AppointmentService(session).list_for_barber(
+        business_id=current_user.business_id,
+        barber_id=barber_id,
+        appointment_date=appointment_date,
+    )
+    return [await barber_appointment_response(item, session) for item in appointments]
+
+
+async def require_assigned_appointment(
+    *, current_user: User, appointment_id: UUID, session: AsyncSession
+) -> Appointment:
+    barber_id = require_barber_account(current_user)
+    appointment = await AppointmentRepository(session).get_by_id(appointment_id)
+    if (
+        appointment is None
+        or appointment.business_id != current_user.business_id
+        or appointment.barber_id != barber_id
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found.")
+    return appointment
+
+
+@router.patch(
+    "/barber/appointments/{appointment_id}/confirm",
+    response_model=BarberAppointmentResponse,
+)
+async def barber_confirm_appointment(
+    appointment_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberAppointmentResponse:
+    await require_assigned_appointment(
+        current_user=current_user, appointment_id=appointment_id, session=session
+    )
+    appointment = await AppointmentService(session).confirm(
+        current_user.business_id, appointment_id
+    )
+    return await barber_appointment_response(appointment, session)
+
+
+@router.patch(
+    "/barber/appointments/{appointment_id}/complete",
+    response_model=BarberAppointmentResponse,
+)
+async def barber_complete_appointment(
+    appointment_id: UUID,
+    payload: AppointmentCompleteRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberAppointmentResponse:
+    await require_assigned_appointment(
+        current_user=current_user, appointment_id=appointment_id, session=session
+    )
+    appointment = await AppointmentService(session).complete(
+        current_user.business_id, appointment_id, payload.payment_method
+    )
+    return await barber_appointment_response(appointment, session)
+
+
+@router.patch(
+    "/barber/appointments/{appointment_id}/no-show",
+    response_model=BarberAppointmentResponse,
+)
+async def barber_no_show_appointment(
+    appointment_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberAppointmentResponse:
+    await require_assigned_appointment(
+        current_user=current_user, appointment_id=appointment_id, session=session
+    )
+    appointment = await AppointmentService(session).mark_no_show(
+        current_user.business_id, appointment_id
+    )
+    return await barber_appointment_response(appointment, session)
 
 
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
@@ -205,4 +396,10 @@ async def confirm_email_change(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification code is invalid or expired.",
         )
-    return CurrentUserResponse(id=user.id, business_id=user.business_id, email=user.email)
+    return CurrentUserResponse(
+        id=user.id,
+        business_id=user.business_id,
+        email=user.email,
+        role=user.role,
+        barber_id=user.barber_id,
+    )

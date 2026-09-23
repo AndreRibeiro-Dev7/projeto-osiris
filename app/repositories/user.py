@@ -25,11 +25,25 @@ class UserRepository:
         statement = select(func.count(User.id)).where(User.business_id == business_id)
         return int((await self._session.scalar(statement)) or 0)
 
-    async def create(self, *, business_id: UUID, email: str, password_hash: str) -> User:
+    async def get_by_barber_id(self, barber_id: UUID) -> User | None:
+        statement = select(User).where(User.barber_id == barber_id)
+        return (await self._session.scalars(statement)).one_or_none()
+
+    async def create(
+        self,
+        *,
+        business_id: UUID,
+        email: str,
+        password_hash: str,
+        role: str = "owner",
+        barber_id: UUID | None = None,
+    ) -> User:
         user = User(
             business_id=business_id,
             email=email.lower(),
             password_hash=password_hash,
+            role=role,
+            barber_id=barber_id,
         )
         self._session.add(user)
         return user
