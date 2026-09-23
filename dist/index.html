@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20260922-38" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20260923-39" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -55,14 +55,14 @@
         </nav>
         <div class="side-foot">
           <span id="user-email"></span>
-          <button id="logout" class="link-button">Sair</button>
+          <button id="logout" class="link-button" type="button"><span aria-hidden="true">↪</span> Sair da conta</button>
         </div>
       </aside>
       <div class="workspace">
         <header>
           <button id="menu" class="menu" aria-label="Abrir menu">☰</button>
           <div><p class="eyebrow" id="today-label"></p><h2 id="business-name">Painel Osiris</h2></div>
-          <span class="status-dot">API conectada</span>
+          <div class="header-account-actions"><span class="status-dot">API conectada</span><button id="logout-header" class="logout-button" type="button" aria-label="Sair da conta"><span aria-hidden="true">↪</span><span>Sair da conta</span></button></div>
         </header>
         <main class="content">
           <section id="inicio-panel" class="panel-view">
@@ -214,6 +214,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20260923-73" defer></script>
+    <script src="/dashboard/app.js?v=20260923-74" defer></script>
   </body>
 </html>

@@ -1024,7 +1024,7 @@ async function confirmOwnerEmail(event) {
   finally { $("confirm-email").disabled = false; $("confirm-email-label").textContent = "Confirmar novo e-mail"; }
 }
 
-$("login-form").addEventListener("submit", login); $("logout").addEventListener("click", logout); $("refresh").addEventListener("click", loadAgenda); $("date-filter").addEventListener("change", loadAgenda); $("barber-filter").addEventListener("change", loadAgenda);
+$("login-form").addEventListener("submit", login); $("logout").addEventListener("click", logout); $("logout-header").addEventListener("click", logout); $("refresh").addEventListener("click", loadAgenda); $("date-filter").addEventListener("change", loadAgenda); $("barber-filter").addEventListener("change", loadAgenda);
 $("previous-day").addEventListener("click", () => moveAgendaDate(-1)); $("today-button").addEventListener("click", goToToday); $("next-day").addEventListener("click", () => moveAgendaDate(1));
 $("agenda-search").addEventListener("input", () => renderAppointments(state.appointments)); $("agenda-status").addEventListener("change", () => renderAppointments(state.appointments));
 $("new-appointment").addEventListener("click", openAppointmentModal); $("close-appointment").addEventListener("click", closeAppointmentModal); $("cancel-appointment-form").addEventListener("click", closeAppointmentModal); $("appointment-barber").addEventListener("change", loadBookingSlots); $("appointment-date").addEventListener("change", loadBookingSlots); $("appointment-service").addEventListener("change", renderBookingSlots); $("appointment-form").addEventListener("submit", createAppointment);
