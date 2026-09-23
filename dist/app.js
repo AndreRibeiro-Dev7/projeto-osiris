@@ -14,13 +14,15 @@ async function request(path, options = {}) {
 
 function showToast(message) { const toast = $("toast"); toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 2600); }
 function closeConfirmation(result = false) { $("confirmation-modal").hidden = true; document.body.classList.remove("modal-open"); const resolve = state.confirmationResolver; state.confirmationResolver = null; if (resolve) resolve(result); }
-function confirmAction({ eyebrow, title, message, detail, confirmLabel }) {
+function confirmAction({ eyebrow, title, message, detail, confirmLabel, variant = "default" }) {
   if (state.confirmationResolver) closeConfirmation(false);
   $("confirmation-eyebrow").textContent = eyebrow;
   $("confirmation-title").textContent = title;
   $("confirmation-message").textContent = message;
   $("confirmation-detail").textContent = detail;
   $("confirmation-submit-label").textContent = confirmLabel;
+  $("confirmation-icon").textContent = variant === "danger" ? "!" : "✓";
+  $("confirmation-modal").querySelector(".confirmation-modal").classList.toggle("danger", variant === "danger");
   $("confirmation-modal").hidden = false;
   document.body.classList.add("modal-open");
   setTimeout(() => $("confirmation-submit").focus(), 0);
@@ -170,7 +172,7 @@ function goToToday() { $("date-filter").value = localDate(); loadAgenda(); }
 
 async function loadClosures() { try { const items = await request(`/businesses/${state.me.business_id}/closures`); $("closure-list").innerHTML = items.length ? items.map((item) => `<article class="closure-row"><div><strong>${item.closure_date.split("-").reverse().join("/")}</strong><span>${escapeHtml(item.reason)}</span></div><button data-closure-delete="${item.id}" type="button">Excluir</button></article>`).join("") : '<div class="empty">Nenhum dia de fechamento cadastrado.</div>'; } catch (error) { $("closure-error").textContent = error.message; } }
 async function createClosure(event) { event.preventDefault(); $("closure-error").textContent = ""; try { await request(`/businesses/${state.me.business_id}/closures`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ closure_date: $("closure-date").value, reason: $("closure-reason").value.trim() }) }); $("closure-form").reset(); showToast("Dia de fechamento salvo com sucesso."); await loadClosures(); } catch (error) { $("closure-error").textContent = error.message.includes("already closed") ? "Esta data já está cadastrada." : error.message.includes("active appointments") ? "Existem atendimentos ativos nessa data. Reagende ou cancele esses clientes antes de fechar o dia." : error.message; } }
-async function deleteClosure(id) { if (!window.confirm("Excluir este dia de fechamento?")) return; try { await request(`/businesses/${state.me.business_id}/closures/${id}`, { method: "DELETE" }); showToast("Dia de fechamento removido."); await loadClosures(); } catch (error) { showToast(error.message); } }
+async function deleteClosure(id) { const confirmed = await confirmAction({ eyebrow: "FECHAMENTOS", title: "Excluir fechamento", detail: "Dia de fechamento selecionado", message: "A data voltará a ficar disponível para novos agendamentos.", confirmLabel: "Excluir fechamento", variant: "danger" }); if (!confirmed) return; try { await request(`/businesses/${state.me.business_id}/closures/${id}`, { method: "DELETE" }); showToast("Dia de fechamento removido."); await loadClosures(); } catch (error) { showToast(error.message); } }
 
 function renderAppointments(items) {
   const query = $("agenda-search").value.trim().toLocaleLowerCase("pt-BR"); const queryDigits = query.replace(/\D/g, ""); const status = $("agenda-status").value;
@@ -507,7 +509,8 @@ async function generateFixedExpenses() {
   const target = new Date(Date.UTC(year, month, 1));
   const targetMonth = target.toISOString().slice(0, 10);
   const targetLabel = target.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
-  if (!window.confirm(`Gerar as despesas fixas para ${targetLabel}?`)) return;
+  const confirmed = await confirmAction({ eyebrow: "CONTROLE FINANCEIRO", title: "Gerar despesas fixas", detail: targetLabel, message: "As despesas fixas cadastradas serão lançadas nesse mês sem duplicar registros existentes.", confirmLabel: "Gerar despesas" });
+  if (!confirmed) return;
   try {
     const created = await request(`/businesses/${state.me.business_id}/expenses/fixed/generate?target_month=${targetMonth}`, { method: "POST" });
     if (!created.length) { showToast("Nenhuma nova despesa fixa para gerar."); return; }
@@ -537,7 +540,9 @@ async function createExpense(event) {
   finally { $("save-expense").disabled = false; $("save-expense-label").textContent = isEditing ? "Salvar alterações" : "Cadastrar despesa"; }
 }
 async function deleteExpense(id) {
-  if (!window.confirm("Excluir esta despesa?")) return;
+  const expense = state.expensePeriodItems.find((item) => item.id === id);
+  const confirmed = await confirmAction({ eyebrow: "CONTROLE FINANCEIRO", title: "Excluir despesa", detail: expense ? `${expense.description} · ${formatMoney(expense.amount_cents)}` : "Despesa selecionada", message: "Esta ação removerá definitivamente o lançamento do relatório financeiro.", confirmLabel: "Excluir despesa", variant: "danger" });
+  if (!confirmed) return;
   try { await request(`/businesses/${state.me.business_id}/expenses/${id}`, { method: "DELETE" }); showToast("Despesa excluída."); await loadFinancial(); }
   catch (error) { showToast(error.message); }
 }
@@ -627,7 +632,8 @@ function closeCustomerHistory() { $("history-modal").hidden = true; document.bod
 
 async function redeemLoyaltyReward(customerId) {
   const metrics = state.customerPortfolio.find((item) => item.id === customerId); if (!metrics?.loyalty_rewards_available) return;
-  if (!window.confirm(`Confirmar o resgate de: ${metrics.loyalty_reward}?`)) return;
+  const confirmed = await confirmAction({ eyebrow: "FIDELIDADE", title: "Resgatar recompensa", detail: metrics.loyalty_reward, message: "O benefício será registrado no histórico deste cliente.", confirmLabel: "Confirmar resgate" });
+  if (!confirmed) return;
   const button = $("history-loyalty").querySelector("[data-redeem-loyalty]"); if (button) { button.disabled = true; button.querySelector("span").textContent = "Resgatando..."; }
   try {
     await request(`/businesses/${state.me.business_id}/customers/${customerId}/loyalty/redeem`, { method: "POST" });
@@ -780,7 +786,7 @@ async function createTimeOff(event) {
   $("save-time-off").disabled = true; $("save-time-off-label").textContent = "Salvando..."; $("time-off-error").textContent = "";
   try { await request(`/businesses/${state.me.business_id}/barbers/${state.timeOffBarberId}/time-off`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: $("time-off-reason").value.trim(), starts_at: start.toISOString(), ends_at: end.toISOString() }) }); $("time-off-form").reset(); closeTimeOffModal(); showToast("Alterações salvas com sucesso."); } catch (error) { $("time-off-error").textContent = error.message; } finally { $("save-time-off").disabled = false; $("save-time-off-label").textContent = "Criar bloqueio"; }
 }
-async function deleteTimeOff(id) { if (!window.confirm("Excluir este bloqueio de agenda?")) return; try { await request(`/businesses/${state.me.business_id}/barbers/${state.timeOffBarberId}/time-off/${id}`, { method: "DELETE" }); await loadTimeOff(); showToast("Bloqueio removido."); } catch (error) { $("time-off-error").textContent = error.message; } }
+async function deleteTimeOff(id) { const confirmed = await confirmAction({ eyebrow: "DISPONIBILIDADE", title: "Excluir bloqueio", detail: "Período indisponível selecionado", message: "O profissional voltará a aparecer como disponível nesse período.", confirmLabel: "Excluir bloqueio", variant: "danger" }); if (!confirmed) return; try { await request(`/businesses/${state.me.business_id}/barbers/${state.timeOffBarberId}/time-off/${id}`, { method: "DELETE" }); await loadTimeOff(); showToast("Bloqueio removido."); } catch (error) { $("time-off-error").textContent = error.message; } }
 
 async function saveSchedule(event) {
   event.preventDefault(); const weekdays = [...document.querySelectorAll('input[name="weekday"]:checked')].map((input) => input.value);

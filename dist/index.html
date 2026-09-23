@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20260922-37" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20260922-38" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -197,11 +197,11 @@
     <div id="confirmation-modal" class="modal-backdrop" hidden>
       <section class="modal modal-small confirmation-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-message">
         <div class="modal-head"><div><p id="confirmation-eyebrow" class="eyebrow">CONFIRMAÇÃO</p><h2 id="confirmation-title">Confirmar ação</h2></div><button id="close-confirmation" class="icon-button" type="button" aria-label="Fechar">×</button></div>
-        <div class="confirmation-content"><span aria-hidden="true">✓</span><div><strong id="confirmation-detail"></strong><p id="confirmation-message"></p></div></div>
+        <div class="confirmation-content"><span id="confirmation-icon" aria-hidden="true">✓</span><div><strong id="confirmation-detail"></strong><p id="confirmation-message"></p></div></div>
         <div class="modal-actions"><button id="cancel-confirmation" class="secondary" type="button">Voltar</button><button id="confirmation-submit" class="primary" type="button"><span id="confirmation-submit-label">Confirmar</span><span>→</span></button></div>
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20260922-69" defer></script>
+    <script src="/dashboard/app.js?v=20260922-70" defer></script>
   </body>
 </html>
