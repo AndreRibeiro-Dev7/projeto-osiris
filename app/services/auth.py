@@ -9,7 +9,11 @@ from uuid import UUID
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
+from app.core.exceptions import (
+    DuplicateResourceError,
+    InvalidCredentialsError,
+    ResourceNotFoundError,
+)
 from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.repositories.barber import BarberRepository
@@ -88,8 +92,10 @@ class AuthService:
         *,
         owner: User,
         barber_id: UUID,
+        current_password: str,
         email: str | None,
         password: str | None,
+        password_confirmation: str | None,
         is_active: bool | None,
     ) -> User:
         """Update credentials or availability for a professional account."""
@@ -101,6 +107,10 @@ class AuthService:
             or account.role != "barber"
         ):
             raise ResourceNotFoundError("Professional account not found.")
+        if not verify_password(current_password, owner.password_hash):
+            raise InvalidCredentialsError("Current owner password is incorrect.")
+        if password != password_confirmation:
+            raise InvalidCredentialsError("The new password and confirmation must match.")
         if email is not None:
             existing = await self._users.get_by_email(email)
             if existing is not None and existing.id != account.id:

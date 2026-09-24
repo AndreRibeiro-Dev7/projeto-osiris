@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.models.appointment import AppointmentStatus, PaymentMethod
 
@@ -72,9 +72,18 @@ class BarberAccountCreate(BaseModel):
 class BarberAccountUpdate(BaseModel):
     """Owner-controlled changes to a professional login account."""
 
+    current_password: str = Field(min_length=1, max_length=128)
     email: EmailStr | None = None
     password: str | None = Field(default=None, min_length=12, max_length=128)
+    password_confirmation: str | None = Field(default=None, min_length=12, max_length=128)
     is_active: bool | None = None
+
+    @model_validator(mode="after")
+    def matching_password_confirmation(self) -> "BarberAccountUpdate":
+        """Reject partial or mismatched password replacements."""
+        if self.password != self.password_confirmation:
+            raise ValueError("The new password and confirmation must match.")
+        return self
 
 
 class BarberAccountResponse(BaseModel):

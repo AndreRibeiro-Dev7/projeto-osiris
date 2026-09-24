@@ -9,6 +9,10 @@ class DuplicateResourceError(Exception):
     """Raised when a unique business rule would be violated."""
 
 
+class InvalidCredentialsError(Exception):
+    """Raised when a sensitive action receives an incorrect current password."""
+
+
 class SchedulingConflictError(Exception):
     """Raised when a barber already has an overlapping appointment."""
 

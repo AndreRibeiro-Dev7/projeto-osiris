@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.core.config import get_settings
-from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
+from app.core.exceptions import (
+    DuplicateResourceError,
+    InvalidCredentialsError,
+    ResourceNotFoundError,
+)
 from app.core.security import create_access_token
 from app.database.session import get_db_session
 from app.integrations.email_delivery import send_email_change_code
@@ -200,6 +204,8 @@ async def update_barber_account(
         )
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except InvalidCredentialsError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
     except DuplicateResourceError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
     if account.barber_id is None:

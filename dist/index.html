@@ -167,7 +167,9 @@
         <div class="modal-head"><div><p class="eyebrow">ACESSO DO PROFISSIONAL</p><h2 id="barber-access-title">Criar acesso</h2><p id="barber-access-professional" class="modal-subtitle"></p></div><button id="close-barber-access" class="icon-button" type="button" aria-label="Fechar">×</button></div>
         <form id="barber-access-form">
           <label>E-mail de acesso<input id="barber-access-email" type="email" autocomplete="email" required placeholder="profissional@exemplo.com" /></label>
+          <label id="barber-owner-password-field" hidden>Senha atual do proprietário<input id="barber-owner-password" type="password" maxlength="128" autocomplete="current-password" /></label>
           <label><span id="barber-access-password-label">Senha inicial</span><input id="barber-access-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required placeholder="Mínimo de 12 caracteres" /></label>
+          <label id="barber-access-password-confirm-field"><span>Digite novamente a senha</span><input id="barber-access-password-confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required placeholder="Repita exatamente a senha" /></label>
           <label id="barber-access-status-field" class="toggle-field" hidden><input id="barber-access-active" type="checkbox" /><span>Permitir que o profissional entre no sistema</span></label>
           <p class="settings-note">O profissional usará a mesma tela de login e verá somente a própria agenda.</p>
           <p id="barber-access-error" class="form-error" role="alert"></p>
@@ -224,6 +226,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20260923-77" defer></script>
+    <script src="/dashboard/app.js?v=20260923-78" defer></script>
   </body>
 </html>
