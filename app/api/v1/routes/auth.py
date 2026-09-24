@@ -23,6 +23,7 @@ from app.models.user import User
 from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
+from app.repositories.user import UserRepository
 from app.schemas.appointment import AppointmentCompleteRequest
 from app.schemas.auth import (
     BarberAccountCreate,
@@ -158,6 +159,28 @@ async def create_barber_account(
         email=user.email,
         is_active=user.is_active,
     )
+
+
+@router.get("/barber-accounts", response_model=list[BarberAccountResponse])
+async def list_barber_accounts(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[BarberAccountResponse]:
+    """List the professional accounts already created by the owner."""
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner access required.")
+    accounts = await UserRepository(session).list_barber_accounts(current_user.business_id)
+    return [
+        BarberAccountResponse(
+            id=account.id,
+            business_id=account.business_id,
+            barber_id=account.barber_id,
+            email=account.email,
+            is_active=account.is_active,
+        )
+        for account in accounts
+        if account.barber_id is not None
+    ]
 
 
 def require_barber_account(user: User) -> UUID:

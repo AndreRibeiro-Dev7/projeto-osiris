@@ -29,6 +29,14 @@ class UserRepository:
         statement = select(User).where(User.barber_id == barber_id)
         return (await self._session.scalars(statement)).one_or_none()
 
+    async def list_barber_accounts(self, business_id: UUID) -> list[User]:
+        statement = (
+            select(User)
+            .where(User.business_id == business_id, User.role == "barber")
+            .order_by(User.email)
+        )
+        return list(await self._session.scalars(statement))
+
     async def create(
         self,
         *,

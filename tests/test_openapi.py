@@ -34,6 +34,8 @@ def test_restricted_barber_routes_are_exposed() -> None:
     paths = app.openapi()["paths"]
 
     assert "/api/v1/auth/barber-accounts" in paths
+    assert "get" in paths["/api/v1/auth/barber-accounts"]
+    assert "post" in paths["/api/v1/auth/barber-accounts"]
     assert "/api/v1/auth/barber/profile" in paths
     assert "/api/v1/auth/barber/appointments" in paths
     assert "/api/v1/auth/barber/appointments/{appointment_id}/confirm" in paths
