@@ -133,6 +133,15 @@ async def me(current_user: Annotated[User, Depends(get_current_user)]) -> Curren
     )
 
 
+def require_owner_account(user: User) -> None:
+    """Reject account-security changes from restricted professional accounts."""
+    if user.role != "owner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the owner can change account credentials.",
+        )
+
+
 @router.post(
     "/barber-accounts",
     response_model=BarberAccountResponse,
@@ -376,6 +385,7 @@ async def change_password(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
     """Change the authenticated owner's password."""
+    require_owner_account(current_user)
     changed = await AuthService(session).change_password(
         user=current_user,
         current_password=payload.current_password,
@@ -404,6 +414,7 @@ async def request_email_change(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> EmailChangeRequestedResponse:
     """Send a verification code to a requested replacement email."""
+    require_owner_account(current_user)
     try:
         code = await AuthService(session).request_email_change(
             user=current_user,
@@ -460,6 +471,7 @@ async def confirm_email_change(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> CurrentUserResponse:
     """Confirm the code and apply the pending login email."""
+    require_owner_account(current_user)
     try:
         user = await AuthService(session).confirm_email_change(user=current_user, code=payload.code)
     except DuplicateResourceError as error:
