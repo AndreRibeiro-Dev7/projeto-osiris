@@ -69,6 +69,14 @@ class BarberAccountCreate(BaseModel):
     password: str = Field(min_length=12, max_length=128)
 
 
+class BarberAccountUpdate(BaseModel):
+    """Owner-controlled changes to a professional login account."""
+
+    email: EmailStr | None = None
+    password: str | None = Field(default=None, min_length=12, max_length=128)
+    is_active: bool | None = None
+
+
 class BarberAccountResponse(BaseModel):
     """Safe representation of a professional login account."""
 

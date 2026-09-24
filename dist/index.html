@@ -158,10 +158,11 @@
         <div class="modal-head"><div><p class="eyebrow">ACESSO DO PROFISSIONAL</p><h2 id="barber-access-title">Criar acesso</h2><p id="barber-access-professional" class="modal-subtitle"></p></div><button id="close-barber-access" class="icon-button" type="button" aria-label="Fechar">×</button></div>
         <form id="barber-access-form">
           <label>E-mail de acesso<input id="barber-access-email" type="email" autocomplete="email" required placeholder="profissional@exemplo.com" /></label>
-          <label>Senha inicial<input id="barber-access-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required placeholder="Mínimo de 12 caracteres" /></label>
+          <label><span id="barber-access-password-label">Senha inicial</span><input id="barber-access-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required placeholder="Mínimo de 12 caracteres" /></label>
+          <label id="barber-access-status-field" class="toggle-field" hidden><input id="barber-access-active" type="checkbox" /><span>Permitir que o profissional entre no sistema</span></label>
           <p class="settings-note">O profissional usará a mesma tela de login e verá somente a própria agenda.</p>
           <p id="barber-access-error" class="form-error" role="alert"></p>
-          <div class="modal-actions"><button id="cancel-barber-access" class="secondary" type="button">Voltar</button><button id="save-barber-access" class="primary" type="submit"><span id="save-barber-access-label">Criar acesso</span><span>→</span></button></div>
+          <div class="modal-actions access-modal-actions"><button id="delete-barber-access" class="danger-button" type="button" hidden>Excluir acesso</button><button id="cancel-barber-access" class="secondary" type="button">Voltar</button><button id="save-barber-access" class="primary" type="submit"><span id="save-barber-access-label">Criar acesso</span><span>→</span></button></div>
         </form>
       </section>
     </div>
@@ -214,6 +215,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20260923-75" defer></script>
+    <script src="/dashboard/app.js?v=20260923-76" defer></script>
   </body>
 </html>

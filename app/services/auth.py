@@ -83,6 +83,56 @@ class AuthService:
         await self._session.refresh(user)
         return user
 
+    async def update_barber_account(
+        self,
+        *,
+        owner: User,
+        barber_id: UUID,
+        email: str | None,
+        password: str | None,
+        is_active: bool | None,
+    ) -> User:
+        """Update credentials or availability for a professional account."""
+        account = await self._users.get_by_barber_id(barber_id)
+        if (
+            owner.role != "owner"
+            or account is None
+            or account.business_id != owner.business_id
+            or account.role != "barber"
+        ):
+            raise ResourceNotFoundError("Professional account not found.")
+        if email is not None:
+            existing = await self._users.get_by_email(email)
+            if existing is not None and existing.id != account.id:
+                raise DuplicateResourceError("An account with this email already exists.")
+            account.email = email.lower()
+        if password is not None:
+            account.password_hash = hash_password(password)
+        if is_active is not None:
+            account.is_active = is_active
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError(
+                "The professional account could not be updated."
+            ) from error
+        await self._session.refresh(account)
+        return account
+
+    async def delete_barber_account(self, *, owner: User, barber_id: UUID) -> None:
+        """Permanently remove one professional login without deleting the barber."""
+        account = await self._users.get_by_barber_id(barber_id)
+        if (
+            owner.role != "owner"
+            or account is None
+            or account.business_id != owner.business_id
+            or account.role != "barber"
+        ):
+            raise ResourceNotFoundError("Professional account not found.")
+        await self._session.delete(account)
+        await self._session.commit()
+
     async def authenticate(self, *, email: str, password: str) -> User | None:
         """Return an active user only when both credentials are valid."""
         user = await self._users.get_by_email(email)

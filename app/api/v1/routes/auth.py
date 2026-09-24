@@ -28,6 +28,7 @@ from app.schemas.appointment import AppointmentCompleteRequest
 from app.schemas.auth import (
     BarberAccountCreate,
     BarberAccountResponse,
+    BarberAccountUpdate,
     BarberAppointmentResponse,
     BarberProfileResponse,
     CurrentUserResponse,
@@ -181,6 +182,49 @@ async def list_barber_accounts(
         for account in accounts
         if account.barber_id is not None
     ]
+
+
+@router.patch("/barber-accounts/{barber_id}", response_model=BarberAccountResponse)
+async def update_barber_account(
+    barber_id: UUID,
+    payload: BarberAccountUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> BarberAccountResponse:
+    """Allow an owner to change or suspend a professional login."""
+    try:
+        account = await AuthService(session).update_barber_account(
+            owner=current_user,
+            barber_id=barber_id,
+            **payload.model_dump(),
+        )
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except DuplicateResourceError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    if account.barber_id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return BarberAccountResponse(
+        id=account.id,
+        business_id=account.business_id,
+        barber_id=account.barber_id,
+        email=account.email,
+        is_active=account.is_active,
+    )
+
+
+@router.delete("/barber-accounts/{barber_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_barber_account(
+    barber_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Remove a professional login while preserving its operational history."""
+    try:
+        await AuthService(session).delete_barber_account(owner=current_user, barber_id=barber_id)
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def require_barber_account(user: User) -> UUID:

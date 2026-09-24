@@ -36,6 +36,8 @@ def test_restricted_barber_routes_are_exposed() -> None:
     assert "/api/v1/auth/barber-accounts" in paths
     assert "get" in paths["/api/v1/auth/barber-accounts"]
     assert "post" in paths["/api/v1/auth/barber-accounts"]
+    assert "patch" in paths["/api/v1/auth/barber-accounts/{barber_id}"]
+    assert "delete" in paths["/api/v1/auth/barber-accounts/{barber_id}"]
     assert "/api/v1/auth/barber/profile" in paths
     assert "/api/v1/auth/barber/appointments" in paths
     assert "/api/v1/auth/barber/appointments/{appointment_id}/confirm" in paths
