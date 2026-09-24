@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20260923-40" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20260923-41" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -62,7 +62,7 @@
         <header>
           <button id="menu" class="menu" aria-label="Abrir menu">☰</button>
           <div><p class="eyebrow" id="today-label"></p><h2 id="business-name">Painel Osiris</h2></div>
-          <div class="header-account-actions"><span class="status-dot">API conectada</span><button id="logout-header" class="logout-button" type="button" aria-label="Sair da conta"><span aria-hidden="true">↪</span><span>Sair da conta</span></button></div>
+          <div class="header-account-actions"><span class="status-dot">API conectada</span><button id="open-account-security" class="logout-button account-button" type="button" aria-label="Minha conta"><span aria-hidden="true">♙</span><span>Minha conta</span></button><button id="logout-header" class="logout-button" type="button" aria-label="Sair da conta"><span aria-hidden="true">↪</span><span>Sair da conta</span></button></div>
         </header>
         <main class="content">
           <section id="inicio-panel" class="panel-view">
@@ -119,6 +119,15 @@
       </div>
     </div>
     <div id="email-confirm-modal" class="modal-backdrop" hidden><section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="email-confirm-title"><div class="modal-head"><div><p class="eyebrow">CONFIRMAÇÃO DE SEGURANÇA</p><h2 id="email-confirm-title">Digite o código</h2><p id="email-code-destination" class="modal-subtitle"></p></div><button id="close-email-confirm" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="email-confirm-form"><label>Código de seis dígitos<input id="email-code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000" /></label><p id="email-code-hint" class="settings-note">O código expira em 10 minutos.</p><p id="email-confirm-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-email-confirm" class="secondary" type="button">Voltar</button><button id="confirm-email" class="primary" type="submit"><span id="confirm-email-label">Confirmar novo e-mail</span><span>→</span></button></div></form></section></div>
+    <div id="account-security-modal" class="modal-backdrop" hidden>
+      <section class="modal account-security-modal" role="dialog" aria-modal="true" aria-labelledby="account-security-title">
+        <div class="modal-head"><div><p class="eyebrow">SEGURANÇA DA CONTA</p><h2 id="account-security-title">E-mail e senha</h2><p id="account-security-email" class="modal-subtitle"></p></div><button id="close-account-security" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <div class="account-security-grid">
+          <form id="account-email-form" class="account-security-card"><div><p class="eyebrow">ALTERAR E-MAIL</p><h3>Novo endereço de acesso</h3></div><label>Novo e-mail<input id="account-new-email" type="email" autocomplete="email" required /></label><label>Senha atual<input id="account-email-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><p class="settings-note">Enviaremos um código de confirmação para o novo endereço.</p><p id="account-email-error" class="form-error" role="alert"></p><button id="save-account-email" class="primary" type="submit"><span id="save-account-email-label">Alterar e-mail</span><span>→</span></button></form>
+          <form id="account-password-form" class="account-security-card"><div><p class="eyebrow">ALTERAR SENHA</p><h3>Proteja seu acesso</h3></div><label>Senha atual<input id="account-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><label>Nova senha<input id="account-new-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><label>Digite novamente a nova senha<input id="account-confirm-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><p class="settings-note">A nova senha deve ter pelo menos 12 caracteres e ser digitada igualmente nos dois campos.</p><p id="account-password-error" class="form-error" role="alert"></p><button id="save-account-password" class="primary" type="submit"><span id="save-account-password-label">Alterar senha</span><span>→</span></button></form>
+        </div>
+      </section>
+    </div>
     <div id="appointment-modal" class="modal-backdrop" hidden>
       <section class="modal" role="dialog" aria-modal="true" aria-labelledby="appointment-title">
         <div class="modal-head"><div><p class="eyebrow">NOVA RESERVA</p><h2 id="appointment-title">Novo agendamento</h2></div><button id="close-appointment" class="icon-button" type="button" aria-label="Fechar">×</button></div>
@@ -215,6 +224,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20260923-76" defer></script>
+    <script src="/dashboard/app.js?v=20260923-77" defer></script>
   </body>
 </html>
