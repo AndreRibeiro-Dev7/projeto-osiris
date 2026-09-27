@@ -776,7 +776,7 @@ function refreshSelectors() {
 async function toggleBarber(id, isActive) {
   try {
     const updated = await request(`/businesses/${state.me.business_id}/barbers/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: !isActive }) });
-    state.barbers = state.barbers.map((item) => item.id === updated.id ? updated : item); renderPeople(); refreshSelectors(); showToast(updated.is_active ? "Profissional ativado." : "Profissional desativado para novos agendamentos.");
+    state.barbers = state.barbers.map((item) => item.id === updated.id ? updated : item); state.barberAccounts = state.barberAccounts.map((item) => item.barber_id === updated.id ? { ...item, is_active: updated.is_active } : item); renderPeople(); refreshSelectors(); showToast(updated.is_active ? "Profissional e acesso ativados." : "Profissional e acesso desativados.");
     if ($("barber-filter").value) await loadAgenda();
   } catch (error) { showToast(error.message); }
 }

@@ -148,6 +148,10 @@ class AuthService:
         user = await self._users.get_by_email(email)
         if user is None or not user.is_active:
             return None
+        if user.role == "barber":
+            barber = await self._barbers.get_by_id(user.barber_id) if user.barber_id else None
+            if barber is None or not barber.is_active:
+                return None
         return user if verify_password(password, user.password_hash) else None
 
     async def change_password(

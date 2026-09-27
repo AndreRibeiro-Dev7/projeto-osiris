@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.core.security import decode_access_token
 from app.database.session import get_db_session
 from app.models.user import User
+from app.repositories.barber import BarberRepository
 from app.repositories.user import UserRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -35,6 +36,16 @@ async def get_current_user(
             detail="Invalid or expired access token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.role == "barber":
+        barber = (
+            await BarberRepository(session).get_by_id(user.barber_id) if user.barber_id else None
+        )
+        if barber is None or not barber.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This professional profile is inactive.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     return user
 
 

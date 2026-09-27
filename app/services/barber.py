@@ -9,6 +9,7 @@ from app.core.exceptions import DuplicateResourceError, ResourceNotFoundError
 from app.models.barber import Barber
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
+from app.repositories.user import UserRepository
 from app.schemas.barber import BarberCreate, BarberUpdate
 
 BARBER_PHONE_ALREADY_EXISTS = "Já existe um profissional cadastrado com este telefone."
@@ -21,6 +22,7 @@ class BarberService:
         self._session = session
         self._barbers = BarberRepository(session)
         self._businesses = BusinessRepository(session)
+        self._users = UserRepository(session)
 
     async def create(self, business_id: UUID, payload: BarberCreate) -> Barber:
         """Register a barber after checking the parent business and phone."""
@@ -56,6 +58,10 @@ class BarberService:
                 raise DuplicateResourceError(BARBER_PHONE_ALREADY_EXISTS)
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(barber, field, value)
+        if payload.is_active is not None:
+            account = await self._users.get_by_barber_id(barber.id)
+            if account is not None:
+                account.is_active = payload.is_active
         try:
             await self._session.commit()
         except IntegrityError as error:
