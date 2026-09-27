@@ -27,6 +27,7 @@ Thumbs.db
 # Build artifacts
 build/
 *.egg-info/
+.black-cache/
 
 # Database volumes
 postgres_data/
