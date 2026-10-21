@@ -46,7 +46,7 @@ services:
 databases:
   - name: osiris-db
     region: virginia
-    plan: free
+    plan: 0.1c-256mb
     databaseName: osiris
     user: osiris
     postgresMajorVersion: "16"
