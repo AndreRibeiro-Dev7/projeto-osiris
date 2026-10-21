@@ -2,7 +2,12 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.appointment import AppointmentCreate
-from app.schemas.auth import BarberAccountUpdate, OwnerAccountCreate, OwnerAccountUpdate
+from app.schemas.auth import (
+    BarberAccountUpdate,
+    OwnerAccountCreate,
+    OwnerAccountUpdate,
+    PasswordResetConfirmRequest,
+)
 from app.schemas.availability import BarberScheduleUpsert
 from app.schemas.barber import BarberCreate
 from app.schemas.business import BusinessCreate, BusinessUpdate
@@ -93,3 +98,13 @@ def test_owner_account_create_requires_matching_passwords() -> None:
 def test_owner_account_update_requires_current_password() -> None:
     with pytest.raises(ValidationError):
         OwnerAccountUpdate(email="socio@osiris.com")
+
+
+def test_password_reset_requires_matching_new_passwords() -> None:
+    with pytest.raises(ValidationError):
+        PasswordResetConfirmRequest(
+            email="dono@osiris.com",
+            code="123456",
+            new_password="nova-senha-forte-123",
+            password_confirmation="nova-senha-diferente-456",
+        )

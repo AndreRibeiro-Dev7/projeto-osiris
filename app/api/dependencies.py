@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token_identity
 from app.database.session import get_db_session
 from app.models.user import User
 from app.repositories.barber import BarberRepository
@@ -29,9 +29,9 @@ async def get_current_user(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="JWT_SECRET_KEY is not configured.",
         )
-    user_id = decode_access_token(token, secret=settings.jwt_secret_key)
-    user = await UserRepository(session).get_by_id(user_id) if user_id else None
-    if user is None or not user.is_active:
+    identity = decode_access_token_identity(token, secret=settings.jwt_secret_key)
+    user = await UserRepository(session).get_by_id(identity[0]) if identity else None
+    if user is None or not user.is_active or identity is None or identity[1] != user.auth_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token.",

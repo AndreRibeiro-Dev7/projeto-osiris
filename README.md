@@ -18,7 +18,7 @@ Horário livre → agendamento criado → horário removido
 
 A aplicação já reúne painel do proprietário, agenda, clientes, equipe, catálogo
 de serviços, agendamento público, assistente de IA e gestão financeira. A
-implementação está coberta por **55 testes automatizados**.
+implementação está coberta por **61 testes automatizados**.
 
 ## Funcionalidades implementadas
 
@@ -46,6 +46,7 @@ implementação está coberta por **55 testes automatizados**.
 - Segmentação da carteira, fidelização, aniversários e histórico de clientes.
 - Assistente baseado na OpenAI Responses API e nos dados reais da agenda.
 - Confirmação de alteração de e-mail por código enviado pelo Resend.
+- Recuperação segura de senha para proprietários e coproprietários por código de uso único.
 - Estrutura preparada para WhatsApp e Google Calendar.
 
 ### Segurança e administração
@@ -183,7 +184,7 @@ black --check app tests
 mypy app tests
 ```
 
-Estado registrado nesta entrega: **55 testes automatizados aprovados**.
+Estado registrado nesta entrega: **61 testes automatizados aprovados**.
 
 ## Próximos passos
 
@@ -194,7 +195,7 @@ e à operação comercial:
 - Configurar backups automáticos e testar a restauração do banco.
 - Adicionar logs centralizados, monitoramento e alertas de indisponibilidade.
 - Concluir a integração oficial com WhatsApp e calendário.
-- Usar domínio verificado para e-mails e implementar recuperação de senha.
+- Usar domínio verificado para melhorar a entrega dos e-mails transacionais.
 - Ampliar testes de autorização, isolamento, interface e carga.
 - Consolidar proteção de dados, auditoria e limites de requisição.
 - Preparar onboarding, planos, cobrança e suporte ao cliente.

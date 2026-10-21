@@ -152,6 +152,7 @@ class AuthService:
             account.email = email.lower()
         if password is not None:
             account.password_hash = hash_password(password)
+            account.auth_version += 1
         if is_active is not None:
             account.is_active = is_active
         try:
@@ -215,6 +216,7 @@ class AuthService:
             account.email = email.lower()
         if password is not None:
             account.password_hash = hash_password(password)
+            account.auth_version += 1
         if is_active is not None:
             account.is_active = is_active
         try:
@@ -260,6 +262,60 @@ class AuthService:
         if verify_password(new_password, user.password_hash):
             return False
         user.password_hash = hash_password(new_password)
+        user.auth_version += 1
+        await self._session.commit()
+        return True
+
+    async def request_password_reset(self, *, email: str) -> tuple[str, str] | None:
+        """Create a rate-limited recovery code only for active owner accounts."""
+        user = await self._users.get_by_email(email.lower())
+        if user is None or user.role != "owner" or not user.is_active:
+            return None
+        now = datetime.now(UTC)
+        if (
+            user.password_reset_requested_at is not None
+            and user.password_reset_requested_at > now - timedelta(seconds=60)
+        ):
+            return None
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        user.password_reset_code_hash = self._password_reset_code_hash(user.id, code)
+        user.password_reset_expires_at = now + timedelta(minutes=10)
+        user.password_reset_requested_at = now
+        user.password_reset_attempts = 0
+        await self._session.commit()
+        return user.email, code
+
+    async def confirm_password_reset(self, *, email: str, code: str, new_password: str) -> bool:
+        """Replace credentials after a valid one-time code and revoke old sessions."""
+        user = await self._users.get_by_email(email.lower())
+        now = datetime.now(UTC)
+        if (
+            user is None
+            or user.role != "owner"
+            or not user.is_active
+            or user.password_reset_code_hash is None
+            or user.password_reset_expires_at is None
+            or user.password_reset_expires_at < now
+            or user.password_reset_attempts >= 5
+        ):
+            return False
+        valid_code = hmac.compare_digest(
+            user.password_reset_code_hash,
+            self._password_reset_code_hash(user.id, code),
+        )
+        if not valid_code:
+            user.password_reset_attempts += 1
+            if user.password_reset_attempts >= 5:
+                user.password_reset_code_hash = None
+                user.password_reset_expires_at = None
+            await self._session.commit()
+            return False
+        user.password_hash = hash_password(new_password)
+        user.auth_version += 1
+        user.password_reset_code_hash = None
+        user.password_reset_expires_at = None
+        user.password_reset_requested_at = None
+        user.password_reset_attempts = 0
         await self._session.commit()
         return True
 
@@ -311,3 +367,7 @@ class AuthService:
     @staticmethod
     def _email_code_hash(user_id: UUID, code: str) -> str:
         return hashlib.sha256(f"{user_id}:{code}".encode()).hexdigest()
+
+    @staticmethod
+    def _password_reset_code_hash(user_id: UUID, code: str) -> str:
+        return hashlib.sha256(f"password-reset:{user_id}:{code}".encode()).hexdigest()

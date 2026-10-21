@@ -48,3 +48,12 @@ def test_users_identify_the_primary_owner() -> None:
 
     assert "is_primary_owner" in users.columns
     assert users.columns["is_primary_owner"].nullable is False
+
+
+def test_users_support_secure_password_recovery() -> None:
+    users = Base.metadata.tables["users"]
+
+    assert "password_reset_code_hash" in users.columns
+    assert "password_reset_expires_at" in users.columns
+    assert "password_reset_attempts" in users.columns
+    assert "auth_version" in users.columns

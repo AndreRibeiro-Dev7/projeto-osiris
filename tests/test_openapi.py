@@ -60,6 +60,13 @@ def test_audit_history_route_is_exposed() -> None:
     assert "get" in paths["/api/v1/businesses/{business_id}/audit-logs"]
 
 
+def test_password_recovery_routes_are_exposed() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "post" in paths["/api/v1/auth/password-reset/request"]
+    assert "post" in paths["/api/v1/auth/password-reset/confirm"]
+
+
 def test_customer_update_route_is_exposed() -> None:
     route = app.openapi()["paths"]["/api/v1/businesses/{business_id}/customers/{customer_id}"]
 

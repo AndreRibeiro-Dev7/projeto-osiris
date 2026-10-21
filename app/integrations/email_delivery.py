@@ -19,7 +19,32 @@ async def send_email_change_code(
                     "<h2>Confirmação de e-mail</h2>"
                     "<p>Use o código abaixo para confirmar seu novo e-mail no Osiris:</p>"
                     f"<p style='font-size:32px;font-weight:bold;letter-spacing:8px'>{code}</p>"
-                    "<p>O código expira em 10 minutos. Se você não solicitou a troca, ignore esta mensagem.</p>"
+                    "<p>O código expira em 10 minutos. Se você não solicitou a troca, "
+                    "ignore esta mensagem.</p>"
+                ),
+            },
+        )
+        response.raise_for_status()
+
+
+async def send_password_reset_code(
+    *, api_key: str, from_email: str, to_email: str, code: str
+) -> None:
+    """Send a short-lived password recovery code without including credentials."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={
+                "from": from_email,
+                "to": [to_email],
+                "subject": "Recupere seu acesso ao Osiris",
+                "html": (
+                    "<h2>Recuperação de senha</h2>"
+                    "<p>Use o código abaixo para criar uma nova senha no Osiris:</p>"
+                    f"<p style='font-size:32px;font-weight:bold;letter-spacing:8px'>{code}</p>"
+                    "<p>O código expira em 10 minutos e pode ser usado uma única vez. "
+                    "Se você não solicitou a recuperação, ignore esta mensagem.</p>"
                 ),
             },
         )

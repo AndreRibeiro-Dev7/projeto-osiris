@@ -1,6 +1,7 @@
 """Owner authentication endpoints."""
 
 import hmac
+import logging
 from datetime import date
 from typing import Annotated
 from uuid import UUID
@@ -20,7 +21,7 @@ from app.core.exceptions import (
 )
 from app.core.security import create_access_token
 from app.database.session import get_db_session
-from app.integrations.email_delivery import send_email_change_code
+from app.integrations.email_delivery import send_email_change_code, send_password_reset_code
 from app.models.appointment import Appointment
 from app.models.customer import Customer
 from app.models.service import Service
@@ -46,12 +47,16 @@ from app.schemas.auth import (
     OwnerAccountUpdate,
     OwnerBootstrapRequest,
     PasswordChangeRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
+    PasswordResetRequestedResponse,
     TokenResponse,
 )
 from app.services.appointment import AppointmentService
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth")
+logger = logging.getLogger(__name__)
 
 
 def bootstrap_is_allowed(
@@ -123,8 +128,57 @@ async def login(
         user_id=user.id,
         secret=settings.jwt_secret_key,
         expires_minutes=settings.access_token_expire_minutes,
+        auth_version=user.auth_version,
     )
     return TokenResponse(access_token=token)
+
+
+@router.post("/password-reset/request", response_model=PasswordResetRequestedResponse)
+async def request_password_reset(
+    payload: PasswordResetRequest,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PasswordResetRequestedResponse:
+    """Send a recovery code while returning the same response for every email."""
+    result = await AuthService(session).request_password_reset(email=str(payload.email))
+    settings = get_settings()
+    development_code: str | None = None
+    if result is not None:
+        destination, code = result
+        if settings.email_delivery_enabled and settings.resend_api_key:
+            try:
+                await send_password_reset_code(
+                    api_key=settings.resend_api_key,
+                    from_email=settings.resend_from_email,
+                    to_email=destination,
+                    code=code,
+                )
+            except httpx.HTTPError:
+                logger.exception("Could not deliver a password recovery code")
+        elif settings.environment == "development" or not settings.email_delivery_enabled:
+            development_code = code
+    return PasswordResetRequestedResponse(
+        detail=("If this email belongs to an active owner account, a recovery code was sent."),
+        development_code=development_code,
+    )
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+async def confirm_password_reset(
+    payload: PasswordResetConfirmRequest,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Replace an owner password after validating the one-time recovery code."""
+    changed = await AuthService(session).confirm_password_reset(
+        email=str(payload.email),
+        code=payload.code,
+        new_password=payload.new_password,
+    )
+    if not changed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The recovery code is invalid or expired.",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me", response_model=CurrentUserResponse)

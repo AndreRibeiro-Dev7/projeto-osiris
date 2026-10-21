@@ -4,6 +4,7 @@ from app.api.v1.routes.auth import bootstrap_is_allowed
 from app.core.security import (
     create_access_token,
     decode_access_token,
+    decode_access_token_identity,
     hash_password,
     verify_password,
 )
@@ -27,6 +28,19 @@ def test_access_token_round_trip_and_rejects_wrong_secret() -> None:
 
     assert decode_access_token(token, secret=secret_a) == user_id
     assert decode_access_token(token, secret=secret_b) is None
+
+
+def test_access_token_preserves_credential_version() -> None:
+    user_id = uuid4()
+    secret = "a" * 64
+    token = create_access_token(
+        user_id=user_id,
+        secret=secret,
+        expires_minutes=5,
+        auth_version=3,
+    )
+
+    assert decode_access_token_identity(token, secret=secret) == (user_id, 3)
 
 
 def test_owner_bootstrap_is_open_in_development() -> None:

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-42" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-43" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -24,6 +24,7 @@
           <label>Senha<input id="password" name="password" type="password" autocomplete="current-password" required /></label>
           <p id="login-error" class="error" role="alert"></p>
           <button id="login-button" class="primary" type="submit"><span id="login-button-label">Entrar no painel</span><span>→</span></button>
+          <button id="open-password-reset" class="login-help-button" type="button">Esqueci minha senha</button>
         </form>
       </main>
       <p class="login-foot">Projeto Osiris · Gestão inteligente</p>
@@ -123,6 +124,22 @@
       </div>
     </div>
     <div id="email-confirm-modal" class="modal-backdrop" hidden><section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="email-confirm-title"><div class="modal-head"><div><p class="eyebrow">CONFIRMAÇÃO DE SEGURANÇA</p><h2 id="email-confirm-title">Digite o código</h2><p id="email-code-destination" class="modal-subtitle"></p></div><button id="close-email-confirm" class="icon-button" type="button" aria-label="Fechar">×</button></div><form id="email-confirm-form"><label>Código de seis dígitos<input id="email-code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required placeholder="000000" /></label><p id="email-code-hint" class="settings-note">O código expira em 10 minutos.</p><p id="email-confirm-error" class="form-error" role="alert"></p><div class="modal-actions"><button id="cancel-email-confirm" class="secondary" type="button">Voltar</button><button id="confirm-email" class="primary" type="submit"><span id="confirm-email-label">Confirmar novo e-mail</span><span>→</span></button></div></form></section></div>
+    <div id="password-reset-modal" class="modal-backdrop" hidden>
+      <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="password-reset-title">
+        <div class="modal-head"><div><p class="eyebrow">RECUPERAÇÃO DE ACESSO</p><h2 id="password-reset-title">Recuperar senha</h2><p class="modal-subtitle">Disponível para proprietários e coproprietários.</p></div><button id="close-password-reset" class="icon-button" type="button" aria-label="Fechar">×</button></div>
+        <form id="password-reset-form">
+          <label>E-mail da conta<input id="password-reset-email" type="email" autocomplete="email" required /></label>
+          <div id="password-reset-fields" class="password-reset-fields" hidden>
+            <label>Código de seis dígitos<input id="password-reset-code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" placeholder="000000" disabled required /></label>
+            <label>Nova senha<input id="password-reset-new" type="password" minlength="12" maxlength="128" autocomplete="new-password" disabled required /></label>
+            <label>Digite novamente a nova senha<input id="password-reset-confirmation" type="password" minlength="12" maxlength="128" autocomplete="new-password" disabled required /></label>
+          </div>
+          <p id="password-reset-hint" class="settings-note">Se o e-mail pertencer a uma conta de proprietário ativa, enviaremos um código válido por 10 minutos. Profissionais devem solicitar a redefinição ao proprietário.</p>
+          <p id="password-reset-error" class="form-error" role="alert"></p>
+          <div class="modal-actions"><button id="cancel-password-reset" class="secondary" type="button">Voltar</button><button id="submit-password-reset" class="primary" type="submit"><span id="password-reset-label">Enviar código</span><span>→</span></button></div>
+        </form>
+      </section>
+    </div>
     <div id="account-security-modal" class="modal-backdrop" hidden>
       <section class="modal account-security-modal" role="dialog" aria-modal="true" aria-labelledby="account-security-title">
         <div class="modal-head"><div><p class="eyebrow">SEGURANÇA DA CONTA</p><h2 id="account-security-title">E-mail e senha</h2><p id="account-security-email" class="modal-subtitle"></p></div><button id="close-account-security" class="icon-button" type="button" aria-label="Fechar">×</button></div>
@@ -245,6 +262,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20261021-81" defer></script>
+    <script src="/dashboard/app.js?v=20261021-82" defer></script>
   </body>
 </html>

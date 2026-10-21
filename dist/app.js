@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, passwordResetRequested: false, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -43,6 +43,55 @@ async function login(event) {
     state.token = data.access_token; sessionStorage.setItem("osiris_token", state.token); await boot();
   } catch (error) { $("login-error").textContent = error.message === "Incorrect email or password." ? "E-mail ou senha incorretos." : error.message; }
   finally { $("login-button").disabled = false; $("login-button-label").textContent = "Entrar no painel"; }
+}
+
+function setPasswordResetStage(requested) {
+  state.passwordResetRequested = requested;
+  $("password-reset-fields").hidden = !requested;
+  [$("password-reset-code"), $("password-reset-new"), $("password-reset-confirmation")].forEach((input) => { input.disabled = !requested; });
+  $("password-reset-email").readOnly = requested;
+  $("password-reset-label").textContent = requested ? "Criar nova senha" : "Enviar código";
+}
+
+function openPasswordReset() {
+  $("password-reset-form").reset();
+  $("password-reset-email").value = $("email").value.trim();
+  $("password-reset-error").textContent = "";
+  $("password-reset-hint").textContent = "Se o e-mail pertencer a uma conta de proprietário ativa, enviaremos um código válido por 10 minutos. Profissionais devem solicitar a redefinição ao proprietário.";
+  setPasswordResetStage(false);
+  $("password-reset-modal").hidden = false;
+  document.body.classList.add("modal-open");
+  setTimeout(() => $("password-reset-email").focus(), 0);
+}
+
+function closePasswordReset() { $("password-reset-modal").hidden = true; document.body.classList.remove("modal-open"); setPasswordResetStage(false); }
+
+async function submitPasswordReset(event) {
+  event.preventDefault();
+  const email = $("password-reset-email").value.trim().toLowerCase();
+  $("password-reset-error").textContent = "";
+  $("submit-password-reset").disabled = true;
+  try {
+    if (!state.passwordResetRequested) {
+      $("password-reset-label").textContent = "Enviando...";
+      const response = await fetch(`${API}/auth/password-reset/request`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.detail || "Não foi possível solicitar a recuperação.");
+      setPasswordResetStage(true);
+      $("password-reset-hint").textContent = result.development_code ? `Modo de desenvolvimento — código: ${result.development_code}` : "Se a conta estiver habilitada, o código chegará por e-mail e expirará em 10 minutos.";
+      $("password-reset-code").focus();
+      return;
+    }
+    const password = $("password-reset-new").value;
+    const confirmation = $("password-reset-confirmation").value;
+    if (password !== confirmation) { $("password-reset-error").textContent = "As duas novas senhas não são iguais."; return; }
+    $("password-reset-label").textContent = "Alterando...";
+    const response = await fetch(`${API}/auth/password-reset/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code: $("password-reset-code").value.trim(), new_password: password, password_confirmation: confirmation }) });
+    const result = response.status === 204 ? {} : await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.detail || "Não foi possível redefinir a senha.");
+    closePasswordReset(); $("email").value = email; $("password").value = ""; showToast("Senha redefinida. Entre com a nova senha."); $("password").focus();
+  } catch (error) { $("password-reset-error").textContent = error.message.includes("invalid or expired") ? "O código é inválido, expirou ou atingiu o limite de tentativas." : error.message; }
+  finally { $("submit-password-reset").disabled = false; $("password-reset-label").textContent = state.passwordResetRequested ? "Criar nova senha" : "Enviar código"; }
 }
 
 async function boot() {
@@ -1128,7 +1177,7 @@ async function confirmOwnerEmail(event) {
   finally { $("confirm-email").disabled = false; $("confirm-email-label").textContent = "Confirmar novo e-mail"; }
 }
 
-$("login-form").addEventListener("submit", login); $("logout").addEventListener("click", logout); $("logout-header").addEventListener("click", logout); $("open-account-security").addEventListener("click", openAccountSecurity); $("close-account-security").addEventListener("click", closeAccountSecurity); $("account-security-modal").addEventListener("click", (event) => { if (event.target === $("account-security-modal")) closeAccountSecurity(); }); $("account-email-form").addEventListener("submit", changeAccountEmail); $("account-password-form").addEventListener("submit", changeAccountPassword); $("refresh").addEventListener("click", loadAgenda); $("date-filter").addEventListener("change", loadAgenda); $("barber-filter").addEventListener("change", loadAgenda);
+$("login-form").addEventListener("submit", login); $("open-password-reset").addEventListener("click", openPasswordReset); $("password-reset-form").addEventListener("submit", submitPasswordReset); $("close-password-reset").addEventListener("click", closePasswordReset); $("cancel-password-reset").addEventListener("click", closePasswordReset); $("password-reset-modal").addEventListener("click", (event) => { if (event.target === $("password-reset-modal")) closePasswordReset(); }); $("logout").addEventListener("click", logout); $("logout-header").addEventListener("click", logout); $("open-account-security").addEventListener("click", openAccountSecurity); $("close-account-security").addEventListener("click", closeAccountSecurity); $("account-security-modal").addEventListener("click", (event) => { if (event.target === $("account-security-modal")) closeAccountSecurity(); }); $("account-email-form").addEventListener("submit", changeAccountEmail); $("account-password-form").addEventListener("submit", changeAccountPassword); $("refresh").addEventListener("click", loadAgenda); $("date-filter").addEventListener("change", loadAgenda); $("barber-filter").addEventListener("change", loadAgenda);
 $("new-owner-account").addEventListener("click", () => openOwnerAccountModal()); $("owner-account-list").addEventListener("click", (event) => { const button = event.target.closest("[data-owner-account-id]"); if (button) openOwnerAccountModal(button.dataset.ownerAccountId); }); $("owner-account-form").addEventListener("submit", saveOwnerAccount); $("delete-owner-account").addEventListener("click", deleteOwnerAccount); $("close-owner-account").addEventListener("click", closeOwnerAccountModal); $("cancel-owner-account").addEventListener("click", closeOwnerAccountModal); $("owner-account-modal").addEventListener("click", (event) => { if (event.target === $("owner-account-modal")) closeOwnerAccountModal(); });
 $("previous-day").addEventListener("click", () => moveAgendaDate(-1)); $("today-button").addEventListener("click", goToToday); $("next-day").addEventListener("click", () => moveAgendaDate(1));
 $("agenda-search").addEventListener("input", () => renderAppointments(state.appointments)); $("agenda-status").addEventListener("change", () => renderAppointments(state.appointments));

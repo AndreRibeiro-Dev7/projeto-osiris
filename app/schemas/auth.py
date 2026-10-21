@@ -30,6 +30,35 @@ class PasswordChangeRequest(BaseModel):
     new_password: str = Field(min_length=12, max_length=128)
 
 
+class PasswordResetRequest(BaseModel):
+    """Email supplied for a privacy-preserving recovery request."""
+
+    email: EmailStr
+
+
+class PasswordResetRequestedResponse(BaseModel):
+    """Generic response that does not disclose whether an account exists."""
+
+    detail: str
+    expires_in_seconds: int = 600
+    development_code: str | None = None
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    """One-time recovery code and confirmed replacement password."""
+
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=12, max_length=128)
+    password_confirmation: str = Field(min_length=12, max_length=128)
+
+    @model_validator(mode="after")
+    def matching_password_confirmation(self) -> "PasswordResetConfirmRequest":
+        if self.new_password != self.password_confirmation:
+            raise ValueError("The new password and confirmation must match.")
+        return self
+
+
 class EmailChangeRequest(BaseModel):
     """Current password and a replacement login email."""
 
