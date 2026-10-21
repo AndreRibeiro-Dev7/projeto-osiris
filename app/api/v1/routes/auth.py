@@ -51,6 +51,7 @@ from app.schemas.auth import (
     PasswordResetConfirmRequest,
     PasswordResetRequest,
     PasswordResetRequestedResponse,
+    SessionRevocationRequest,
     TokenResponse,
 )
 from app.services.appointment import AppointmentService
@@ -558,6 +559,25 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect or the new password is unchanged.",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/sessions/revoke-all", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_all_sessions(
+    payload: SessionRevocationRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Invalidate all sessions after confirming the authenticated owner's password."""
+    require_owner_account(current_user)
+    revoked = await AuthService(session).revoke_all_sessions(
+        user=current_user, current_password=payload.current_password
+    )
+    if not revoked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

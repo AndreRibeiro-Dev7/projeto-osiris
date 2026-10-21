@@ -293,6 +293,14 @@ class AuthService:
         await self._session.commit()
         return True
 
+    async def revoke_all_sessions(self, *, user: User, current_password: str) -> bool:
+        """Invalidate every bearer token issued with the current credential version."""
+        if not verify_password(current_password, user.password_hash):
+            return False
+        user.auth_version += 1
+        await self._session.commit()
+        return True
+
     async def request_password_reset(self, *, email: str) -> tuple[str, str] | None:
         """Create a rate-limited recovery code only for active owner accounts."""
         user = await self._users.get_by_email(email.lower())

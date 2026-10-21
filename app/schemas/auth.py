@@ -30,6 +30,12 @@ class PasswordChangeRequest(BaseModel):
     new_password: str = Field(min_length=12, max_length=128)
 
 
+class SessionRevocationRequest(BaseModel):
+    """Current password required before invalidating every active session."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+
+
 class PasswordResetRequest(BaseModel):
     """Email supplied for a privacy-preserving recovery request."""
 

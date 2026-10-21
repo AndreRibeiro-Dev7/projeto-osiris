@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-43" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-44" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -146,6 +146,7 @@
         <div class="account-security-grid">
           <form id="account-email-form" class="account-security-card"><div><p class="eyebrow">ALTERAR E-MAIL</p><h3>Novo endereço de acesso</h3></div><label>Novo e-mail<input id="account-new-email" type="email" autocomplete="email" required /></label><label>Senha atual<input id="account-email-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><p class="settings-note">Enviaremos um código de confirmação para o novo endereço.</p><p id="account-email-error" class="form-error" role="alert"></p><button id="save-account-email" class="primary" type="submit"><span id="save-account-email-label">Alterar e-mail</span><span>→</span></button></form>
           <form id="account-password-form" class="account-security-card"><div><p class="eyebrow">ALTERAR SENHA</p><h3>Proteja seu acesso</h3></div><label>Senha atual<input id="account-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><label>Nova senha<input id="account-new-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><label>Digite novamente a nova senha<input id="account-confirm-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required /></label><p class="settings-note">A nova senha deve ter pelo menos 12 caracteres e ser digitada igualmente nos dois campos.</p><p id="account-password-error" class="form-error" role="alert"></p><button id="save-account-password" class="primary" type="submit"><span id="save-account-password-label">Alterar senha</span><span>→</span></button></form>
+          <form id="account-sessions-form" class="account-security-card account-security-wide"><div><p class="eyebrow">SESSÕES ATIVAS</p><h3>Encerrar acessos em todos os dispositivos</h3></div><label>Senha atual<input id="account-sessions-current-password" type="password" maxlength="128" autocomplete="current-password" required /></label><p class="settings-note">Todos os celulares e computadores conectados serão desconectados, inclusive este dispositivo.</p><p id="account-sessions-error" class="form-error" role="alert"></p><button id="revoke-account-sessions" class="danger-button" type="submit"><span id="revoke-account-sessions-label">Encerrar todas as sessões</span></button></form>
         </div>
       </section>
     </div>
@@ -262,6 +263,6 @@
       </section>
     </div>
     <div id="toast" role="status"></div>
-    <script src="/dashboard/app.js?v=20261021-83" defer></script>
+    <script src="/dashboard/app.js?v=20261021-84" defer></script>
   </body>
 </html>
