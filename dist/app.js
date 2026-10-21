@@ -932,7 +932,7 @@ function renderOwnerAccounts() {
   if (!$("owner-account-list")) return;
   $("owner-account-list").innerHTML = state.ownerAccounts.map((account) => {
     const roleLabel = account.is_primary_owner ? "Proprietário principal" : account.is_current ? "Sua conta · Coproprietário" : "Coproprietário";
-    return `<article class="owner-account-card ${account.is_current ? "current" : ""} ${account.is_primary_owner ? "primary-owner" : ""} ${account.is_active ? "" : "inactive"}"><div class="owner-account-card-head"><div><h3>${escapeHtml(account.email)}</h3><p>${roleLabel}</p></div><span class="owner-account-status">${account.is_active ? "Ativo" : "Desativado"}</span></div>${account.is_current ? "" : `<button data-owner-account-id="${account.id}" type="button">Gerenciar acesso</button>`}</article>`;
+    return `<article class="owner-account-card ${account.is_current ? "current" : ""} ${account.is_primary_owner ? "primary-owner" : ""} ${account.is_active ? "" : "inactive"}"><div class="owner-account-card-head"><div><h3>${escapeHtml(account.email)}</h3><p>${roleLabel}</p></div><span class="owner-account-status">${account.is_active ? "Ativo" : "Desativado"}</span></div>${account.is_current || account.is_primary_owner ? "" : `<button data-owner-account-id="${account.id}" type="button">Gerenciar acesso</button>`}</article>`;
   }).join("") || '<div class="empty">Nenhuma conta administrativa encontrada.</div>';
 }
 
