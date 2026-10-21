@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, passwordResetRequested: false, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, passwordResetRequested: false, loginLockUntil: null, loginLockTimer: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -34,15 +34,54 @@ function statusLabel(status) { return ({ scheduled: "Agendado", confirmed: "Conf
 function formatTime(value) { return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: state.business?.timezone || "America/Sao_Paulo" }).format(new Date(value)); }
 function formatAppointmentDate(value) { return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", timeZone: state.business?.timezone || "America/Sao_Paulo" }).format(new Date(value)); }
 
+function formatLoginWait(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateLoginCountdown() {
+  const remaining = Math.max(0, Math.ceil((state.loginLockUntil - Date.now()) / 1000));
+  if (!remaining) {
+    clearInterval(state.loginLockTimer);
+    state.loginLockTimer = null;
+    state.loginLockUntil = null;
+    $("login-button").disabled = false;
+    $("login-button-label").textContent = "Entrar no painel";
+    $("login-error").textContent = "O bloqueio terminou. Você já pode tentar novamente.";
+    return;
+  }
+  const countdown = formatLoginWait(remaining);
+  $("login-error").textContent = `Conta temporariamente bloqueada. Tente novamente em ${countdown}.`;
+  $("login-button").disabled = true;
+  $("login-button-label").textContent = `Aguarde ${countdown}`;
+}
+
+function startLoginCountdown(seconds) {
+  clearInterval(state.loginLockTimer);
+  state.loginLockUntil = Date.now() + Math.max(1, seconds) * 1000;
+  updateLoginCountdown();
+  state.loginLockTimer = setInterval(updateLoginCountdown, 1000);
+}
+
 async function login(event) {
-  event.preventDefault(); $("login-error").textContent = ""; $("login-button").disabled = true; $("login-button-label").textContent = "Entrando...";
+  event.preventDefault();
+  if (state.loginLockUntil && state.loginLockUntil > Date.now()) { updateLoginCountdown(); return; }
+  $("login-error").textContent = ""; $("login-button").disabled = true; $("login-button-label").textContent = "Entrando...";
   const body = new URLSearchParams({ username: $("email").value.trim(), password: $("password").value });
   try {
     const response = await fetch(`${API}/auth/token`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    if (response.status === 429) {
+      startLoginCountdown(Number(response.headers.get("Retry-After")) || 900);
+      return;
+    }
     const raw = await response.text(); let data = {}; try { data = JSON.parse(raw); } catch { data = { detail: response.ok ? raw : "O servidor não conseguiu acessar o banco de dados." }; } if (!response.ok) throw new Error(data.detail || "E-mail ou senha incorretos.");
     state.token = data.access_token; sessionStorage.setItem("osiris_token", state.token); await boot();
   } catch (error) { $("login-error").textContent = error.message === "Incorrect email or password." ? "E-mail ou senha incorretos." : error.message; }
-  finally { $("login-button").disabled = false; $("login-button-label").textContent = "Entrar no painel"; }
+  finally {
+    if (state.loginLockUntil && state.loginLockUntil > Date.now()) updateLoginCountdown();
+    else { $("login-button").disabled = false; $("login-button-label").textContent = "Entrar no painel"; }
+  }
 }
 
 function setPasswordResetStage(requested) {

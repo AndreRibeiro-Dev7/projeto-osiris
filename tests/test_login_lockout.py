@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+from app.core.exceptions import LoginTemporarilyLockedError
 from app.core.security import hash_password
 from app.services.auth import LOGIN_MAX_FAILED_ATTEMPTS, AuthService
 
@@ -33,10 +34,16 @@ def test_fifth_invalid_password_temporarily_locks_account() -> None:
     owner = make_owner()
     service, commit = make_service(owner)
 
-    for _ in range(LOGIN_MAX_FAILED_ATTEMPTS):
+    for _ in range(LOGIN_MAX_FAILED_ATTEMPTS - 1):
         assert (
             asyncio.run(service.authenticate(email=owner.email, password="senha-incorreta")) is None
         )
+    try:
+        asyncio.run(service.authenticate(email=owner.email, password="senha-incorreta"))
+    except LoginTemporarilyLockedError as error:
+        assert 899 <= error.retry_after_seconds <= 900
+    else:
+        raise AssertionError("The fifth invalid login must report the temporary lockout")
 
     assert owner.login_failed_attempts == 0
     assert owner.login_locked_until is not None
@@ -49,11 +56,12 @@ def test_correct_password_is_rejected_during_lockout() -> None:
     owner.login_locked_until = datetime.now(UTC) + timedelta(minutes=10)
     service, commit = make_service(owner)
 
-    authenticated = asyncio.run(
-        service.authenticate(email=owner.email, password="senha-correta-forte-123")
-    )
-
-    assert authenticated is None
+    try:
+        asyncio.run(service.authenticate(email=owner.email, password="senha-correta-forte-123"))
+    except LoginTemporarilyLockedError as error:
+        assert 599 <= error.retry_after_seconds <= 600
+    else:
+        raise AssertionError("A locked account must report the remaining wait")
     commit.assert_not_awaited()
 
 

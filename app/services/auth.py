@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import math
 import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -13,6 +14,7 @@ from app.core.exceptions import (
     DuplicateResourceError,
     InsufficientPermissionError,
     InvalidCredentialsError,
+    LoginTemporarilyLockedError,
     ResourceNotFoundError,
 )
 from app.core.security import hash_password, verify_password
@@ -254,7 +256,9 @@ class AuthService:
             return None
         now = datetime.now(UTC)
         if user.login_locked_until is not None and user.login_locked_until > now:
-            return None
+            raise LoginTemporarilyLockedError(
+                math.ceil((user.login_locked_until - now).total_seconds())
+            )
         if user.role == "barber":
             barber = await self._barbers.get_by_id(user.barber_id) if user.barber_id else None
             if barber is None or not barber.is_active:
@@ -265,6 +269,10 @@ class AuthService:
                 user.login_locked_until = now + timedelta(minutes=LOGIN_LOCK_MINUTES)
                 user.login_failed_attempts = 0
             await self._session.commit()
+            if user.login_locked_until is not None and user.login_locked_until > now:
+                raise LoginTemporarilyLockedError(
+                    math.ceil((user.login_locked_until - now).total_seconds())
+                )
             return None
         if user.login_failed_attempts or user.login_locked_until is not None:
             self._clear_login_lock(user)

@@ -17,6 +17,7 @@ from app.core.exceptions import (
     DuplicateResourceError,
     InsufficientPermissionError,
     InvalidCredentialsError,
+    LoginTemporarilyLockedError,
     ResourceNotFoundError,
 )
 from app.core.security import create_access_token
@@ -117,7 +118,14 @@ async def login(
     settings = get_settings()
     if not settings.jwt_secret_key:
         raise HTTPException(status_code=503, detail="JWT_SECRET_KEY is not configured.")
-    user = await AuthService(session).authenticate(email=form.username, password=form.password)
+    try:
+        user = await AuthService(session).authenticate(email=form.username, password=form.password)
+    except LoginTemporarilyLockedError as error:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Conta temporariamente bloqueada por excesso de tentativas.",
+            headers={"Retry-After": str(error.retry_after_seconds)},
+        ) from error
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -55,7 +55,7 @@ implementação está coberta por **64 testes automatizados**.
 - Contas de coproprietários protegidas por uma hierarquia de Proprietário principal.
 - Histórico automático das alterações realizadas por proprietários e profissionais.
 - Senhas protegidas com Argon2 e dados isolados por barbearia.
-- Bloqueio temporário após cinco tentativas consecutivas de login inválido.
+- Bloqueio de 15 minutos, com contagem regressiva, após cinco tentativas de login inválido.
 - Configurações da empresa e da conta atualizadas pelo painel.
 - Documentação interativa com OpenAPI/Swagger.
 

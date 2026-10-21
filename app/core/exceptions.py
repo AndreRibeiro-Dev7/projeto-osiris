@@ -13,6 +13,14 @@ class InvalidCredentialsError(Exception):
     """Raised when a sensitive action receives an incorrect current password."""
 
 
+class LoginTemporarilyLockedError(Exception):
+    """Raised when repeated invalid credentials temporarily block an account."""
+
+    def __init__(self, retry_after_seconds: int) -> None:
+        super().__init__("Login is temporarily blocked.")
+        self.retry_after_seconds = retry_after_seconds
+
+
 class InsufficientPermissionError(Exception):
     """Raised when an account lacks authority for a protected action."""
 
