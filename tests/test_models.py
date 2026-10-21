@@ -40,3 +40,10 @@ def test_users_support_restricted_barber_accounts() -> None:
     assert "barber_id" in users.columns
     assert "ck_users_role" in constraint_names
     assert users.columns["barber_id"].unique
+
+
+def test_users_identify_the_primary_owner() -> None:
+    users = Base.metadata.tables["users"]
+
+    assert "is_primary_owner" in users.columns
+    assert users.columns["is_primary_owner"].nullable is False

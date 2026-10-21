@@ -13,6 +13,10 @@ class InvalidCredentialsError(Exception):
     """Raised when a sensitive action receives an incorrect current password."""
 
 
+class InsufficientPermissionError(Exception):
+    """Raised when an account lacks authority for a protected action."""
+
+
 class SchedulingConflictError(Exception):
     """Raised when a barber already has an overlapping appointment."""
 

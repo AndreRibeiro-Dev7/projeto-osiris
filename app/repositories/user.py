@@ -53,6 +53,7 @@ class UserRepository:
         password_hash: str,
         role: str = "owner",
         barber_id: UUID | None = None,
+        is_primary_owner: bool = False,
     ) -> User:
         user = User(
             business_id=business_id,
@@ -60,6 +61,7 @@ class UserRepository:
             password_hash=password_hash,
             role=role,
             barber_id=barber_id,
+            is_primary_owner=is_primary_owner,
         )
         self._session.add(user)
         return user

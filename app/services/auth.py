@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
     DuplicateResourceError,
+    InsufficientPermissionError,
     InvalidCredentialsError,
     ResourceNotFoundError,
 )
@@ -43,6 +44,7 @@ class AuthService:
             business_id=business_id,
             email=email,
             password_hash=hash_password(password),
+            is_primary_owner=True,
         )
         try:
             await self._session.commit()
@@ -136,6 +138,7 @@ class AuthService:
             or account.business_id != owner.business_id
             or account.role != "owner"
             or account.id == owner.id
+            or account.is_primary_owner
         ):
             raise ResourceNotFoundError("Co-owner account not found.")
         if not verify_password(current_password, owner.password_hash):
@@ -163,13 +166,17 @@ class AuthService:
         self, *, owner: User, account_id: UUID, current_password: str
     ) -> None:
         """Delete another owner account while preserving the acting owner."""
+        if owner.role != "owner" or not owner.is_primary_owner:
+            raise InsufficientPermissionError(
+                "Only the primary owner can delete co-owner accounts."
+            )
         account = await self._users.get_by_id(account_id)
         if (
-            owner.role != "owner"
-            or account is None
+            account is None
             or account.business_id != owner.business_id
             or account.role != "owner"
             or account.id == owner.id
+            or account.is_primary_owner
         ):
             raise ResourceNotFoundError("Co-owner account not found.")
         if not verify_password(current_password, owner.password_hash):

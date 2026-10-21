@@ -59,6 +59,7 @@ class CurrentUserResponse(BaseModel):
     email: EmailStr
     role: str
     barber_id: UUID | None = None
+    is_primary_owner: bool = False
 
 
 class OwnerAccountCreate(BaseModel):
@@ -106,6 +107,7 @@ class OwnerAccountResponse(BaseModel):
     email: EmailStr
     is_active: bool
     is_current: bool
+    is_primary_owner: bool
     created_at: datetime
 
 

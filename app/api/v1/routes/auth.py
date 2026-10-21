@@ -14,6 +14,7 @@ from app.api.dependencies import get_current_user
 from app.core.config import get_settings
 from app.core.exceptions import (
     DuplicateResourceError,
+    InsufficientPermissionError,
     InvalidCredentialsError,
     ResourceNotFoundError,
 )
@@ -94,6 +95,7 @@ async def bootstrap_owner(
             email=user.email,
             role=user.role,
             barber_id=user.barber_id,
+            is_primary_owner=user.is_primary_owner,
         )
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
@@ -134,6 +136,7 @@ async def me(current_user: Annotated[User, Depends(get_current_user)]) -> Curren
         email=current_user.email,
         role=current_user.role,
         barber_id=current_user.barber_id,
+        is_primary_owner=current_user.is_primary_owner,
     )
 
 
@@ -153,6 +156,7 @@ def owner_account_response(account: User, current_user: User) -> OwnerAccountRes
         email=account.email,
         is_active=account.is_active,
         is_current=account.id == current_user.id,
+        is_primary_owner=account.is_primary_owner,
         created_at=account.created_at,
     )
 
@@ -232,6 +236,8 @@ async def delete_owner_account(
         )
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except InsufficientPermissionError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
     except InvalidCredentialsError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -582,4 +588,5 @@ async def confirm_email_change(
         email=user.email,
         role=user.role,
         barber_id=user.barber_id,
+        is_primary_owner=user.is_primary_owner,
     )

@@ -930,7 +930,10 @@ function logout() { sessionStorage.removeItem("osiris_token"); state.token = nul
 
 function renderOwnerAccounts() {
   if (!$("owner-account-list")) return;
-  $("owner-account-list").innerHTML = state.ownerAccounts.map((account) => `<article class="owner-account-card ${account.is_current ? "current" : ""} ${account.is_active ? "" : "inactive"}"><div class="owner-account-card-head"><div><h3>${escapeHtml(account.email)}</h3><p>${account.is_current ? "Sua conta atual" : "Coproprietário"}</p></div><span class="owner-account-status">${account.is_active ? "Ativo" : "Desativado"}</span></div>${account.is_current ? "" : `<button data-owner-account-id="${account.id}" type="button">Gerenciar acesso</button>`}</article>`).join("") || '<div class="empty">Nenhuma conta administrativa encontrada.</div>';
+  $("owner-account-list").innerHTML = state.ownerAccounts.map((account) => {
+    const roleLabel = account.is_primary_owner ? "Proprietário principal" : account.is_current ? "Sua conta · Coproprietário" : "Coproprietário";
+    return `<article class="owner-account-card ${account.is_current ? "current" : ""} ${account.is_primary_owner ? "primary-owner" : ""} ${account.is_active ? "" : "inactive"}"><div class="owner-account-card-head"><div><h3>${escapeHtml(account.email)}</h3><p>${roleLabel}</p></div><span class="owner-account-status">${account.is_active ? "Ativo" : "Desativado"}</span></div>${account.is_current ? "" : `<button data-owner-account-id="${account.id}" type="button">Gerenciar acesso</button>`}</article>`;
+  }).join("") || '<div class="empty">Nenhuma conta administrativa encontrada.</div>';
 }
 
 function openOwnerAccountModal(accountId = null) {
@@ -947,7 +950,7 @@ function openOwnerAccountModal(accountId = null) {
   $("owner-account-password").placeholder = account ? "Deixe vazio para manter a senha" : "Mínimo de 12 caracteres";
   $("owner-account-status-field").hidden = !account;
   $("owner-account-active").checked = account?.is_active ?? true;
-  $("delete-owner-account").hidden = !account;
+  $("delete-owner-account").hidden = !account || !state.me?.is_primary_owner || account.is_primary_owner;
   $("save-owner-account-label").textContent = account ? "Salvar acesso" : "Criar acesso";
   $("owner-account-error").textContent = "";
   $("owner-account-modal").hidden = false;
@@ -979,6 +982,7 @@ async function saveOwnerAccount(event) {
 async function deleteOwnerAccount() {
   const account = state.ownerAccounts.find((item) => item.id === state.managingOwnerId);
   if (!account) return;
+  if (!state.me?.is_primary_owner || account.is_primary_owner) { $("owner-account-error").textContent = "Somente o Proprietário principal pode excluir contas de coproprietários."; return; }
   const currentPassword = $("owner-account-current-password").value;
   if (!currentPassword) { $("owner-account-error").textContent = "Confirme sua senha atual antes de excluir."; return; }
   const confirmed = await confirmAction({ eyebrow: "ACESSO ADMINISTRATIVO", title: "Excluir coproprietário", detail: account.email, message: "Esta conta perderá imediatamente o acesso. Os dados da barbearia serão preservados.", confirmLabel: "Excluir acesso", variant: "danger" });
@@ -986,7 +990,7 @@ async function deleteOwnerAccount() {
   try {
     await request(`/auth/owner-accounts/${account.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current_password: currentPassword }) });
     state.ownerAccounts = state.ownerAccounts.filter((item) => item.id !== account.id); closeOwnerAccountModal(); renderOwnerAccounts(); showToast("Acesso do coproprietário excluído.");
-  } catch (error) { document.body.classList.add("modal-open"); $("owner-account-error").textContent = error.message.includes("Current owner password") ? "Sua senha atual está incorreta." : error.message; }
+  } catch (error) { document.body.classList.add("modal-open"); $("owner-account-error").textContent = error.message.includes("Current owner password") ? "Sua senha atual está incorreta." : error.message.includes("Only the primary owner") ? "Somente o Proprietário principal pode excluir contas de coproprietários." : error.message; }
 }
 
 function openBarberAccessModal(barberId) { const barber = state.barbers.find((item) => item.id === barberId); if (!barber) return; const account = state.barberAccounts.find((item) => item.barber_id === barberId); state.accessBarberId = barberId; $("barber-access-form").reset(); $("barber-access-title").textContent = account ? "Gerenciar acesso" : "Criar acesso"; $("barber-access-professional").textContent = barber.full_name; $("barber-access-email").value = account?.email || ""; $("barber-owner-password-field").hidden = !account; $("barber-owner-password").required = Boolean(account); $("barber-access-password").required = !account; $("barber-access-password-label").textContent = account ? "Nova senha (opcional)" : "Senha inicial"; $("barber-access-password").placeholder = account ? "Deixe vazio para manter a senha" : "Mínimo de 12 caracteres"; $("barber-access-password-confirm").required = !account; $("barber-access-password-confirm-field").querySelector("span").textContent = account ? "Digite novamente a nova senha" : "Digite novamente a senha inicial"; $("barber-access-status-field").hidden = !account; $("barber-access-active").checked = account?.is_active ?? true; $("delete-barber-access").hidden = !account; $("save-barber-access-label").textContent = account ? "Salvar acesso" : "Criar acesso"; $("barber-access-error").textContent = ""; $("barber-access-modal").hidden = false; document.body.classList.add("modal-open"); setTimeout(() => $("barber-access-email").focus(), 0); }

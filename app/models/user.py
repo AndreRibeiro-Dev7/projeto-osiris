@@ -22,6 +22,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), default="owner", nullable=False)
+    is_primary_owner: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     barber_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("barbers.id", ondelete="CASCADE"), unique=True, nullable=True
     )
