@@ -18,7 +18,7 @@ Horário livre → agendamento criado → horário removido
 
 A aplicação já reúne painel do proprietário, agenda, clientes, equipe, catálogo
 de serviços, agendamento público, assistente de IA e gestão financeira. A
-implementação está coberta por **61 testes automatizados**.
+implementação está coberta por **64 testes automatizados**.
 
 ## Funcionalidades implementadas
 
@@ -55,6 +55,7 @@ implementação está coberta por **61 testes automatizados**.
 - Contas de coproprietários protegidas por uma hierarquia de Proprietário principal.
 - Histórico automático das alterações realizadas por proprietários e profissionais.
 - Senhas protegidas com Argon2 e dados isolados por barbearia.
+- Bloqueio temporário após cinco tentativas consecutivas de login inválido.
 - Configurações da empresa e da conta atualizadas pelo painel.
 - Documentação interativa com OpenAPI/Swagger.
 
@@ -184,7 +185,7 @@ black --check app tests
 mypy app tests
 ```
 
-Estado registrado nesta entrega: **61 testes automatizados aprovados**.
+Estado registrado nesta entrega: **64 testes automatizados aprovados**.
 
 ## Próximos passos
 

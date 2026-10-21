@@ -56,4 +56,6 @@ def test_users_support_secure_password_recovery() -> None:
     assert "password_reset_code_hash" in users.columns
     assert "password_reset_expires_at" in users.columns
     assert "password_reset_attempts" in users.columns
+    assert "login_failed_attempts" in users.columns
+    assert "login_locked_until" in users.columns
     assert "auth_version" in users.columns

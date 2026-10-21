@@ -21,6 +21,9 @@ from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
 from app.repositories.user import UserRepository
 
+LOGIN_MAX_FAILED_ATTEMPTS = 5
+LOGIN_LOCK_MINUTES = 15
+
 
 class AuthService:
     """Create the first owner and validate credentials."""
@@ -153,6 +156,7 @@ class AuthService:
         if password is not None:
             account.password_hash = hash_password(password)
             account.auth_version += 1
+            self._clear_login_lock(account)
         if is_active is not None:
             account.is_active = is_active
         try:
@@ -217,6 +221,7 @@ class AuthService:
         if password is not None:
             account.password_hash = hash_password(password)
             account.auth_version += 1
+            self._clear_login_lock(account)
         if is_active is not None:
             account.is_active = is_active
         try:
@@ -243,15 +248,28 @@ class AuthService:
         await self._session.commit()
 
     async def authenticate(self, *, email: str, password: str) -> User | None:
-        """Return an active user only when both credentials are valid."""
-        user = await self._users.get_by_email(email)
+        """Validate credentials and persist a temporary lock after repeated failures."""
+        user = await self._users.get_by_email(email.lower())
         if user is None or not user.is_active:
+            return None
+        now = datetime.now(UTC)
+        if user.login_locked_until is not None and user.login_locked_until > now:
             return None
         if user.role == "barber":
             barber = await self._barbers.get_by_id(user.barber_id) if user.barber_id else None
             if barber is None or not barber.is_active:
                 return None
-        return user if verify_password(password, user.password_hash) else None
+        if not verify_password(password, user.password_hash):
+            user.login_failed_attempts += 1
+            if user.login_failed_attempts >= LOGIN_MAX_FAILED_ATTEMPTS:
+                user.login_locked_until = now + timedelta(minutes=LOGIN_LOCK_MINUTES)
+                user.login_failed_attempts = 0
+            await self._session.commit()
+            return None
+        if user.login_failed_attempts or user.login_locked_until is not None:
+            self._clear_login_lock(user)
+            await self._session.commit()
+        return user
 
     async def change_password(
         self, *, user: User, current_password: str, new_password: str
@@ -263,6 +281,7 @@ class AuthService:
             return False
         user.password_hash = hash_password(new_password)
         user.auth_version += 1
+        self._clear_login_lock(user)
         await self._session.commit()
         return True
 
@@ -312,6 +331,7 @@ class AuthService:
             return False
         user.password_hash = hash_password(new_password)
         user.auth_version += 1
+        self._clear_login_lock(user)
         user.password_reset_code_hash = None
         user.password_reset_expires_at = None
         user.password_reset_requested_at = None
@@ -371,3 +391,8 @@ class AuthService:
     @staticmethod
     def _password_reset_code_hash(user_id: UUID, code: str) -> str:
         return hashlib.sha256(f"password-reset:{user_id}:{code}".encode()).hexdigest()
+
+    @staticmethod
+    def _clear_login_lock(user: User) -> None:
+        user.login_failed_attempts = 0
+        user.login_locked_until = None

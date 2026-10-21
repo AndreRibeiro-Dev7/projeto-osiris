@@ -39,6 +39,10 @@ class User(Base):
         DateTime(timezone=True), nullable=True
     )
     password_reset_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    login_failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    login_locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     auth_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
