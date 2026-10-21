@@ -110,6 +110,7 @@ async function refreshActiveView() {
     else if (view === "agenda") await loadAgenda();
     else if (view === "financeiro") await loadFinancial();
     else if (view === "clientes") await loadCustomerPortfolio();
+    else if (view === "atividades") await loadAuditLogs();
     else if (view === "fechamentos") await loadClosures();
   } catch (error) { showToast(error.message); }
   finally { state.refreshInFlight = false; }
@@ -993,6 +994,34 @@ async function deleteOwnerAccount() {
   } catch (error) { document.body.classList.add("modal-open"); $("owner-account-error").textContent = error.message.includes("Current owner password") ? "Sua senha atual está incorreta." : error.message.includes("Only the primary owner") ? "Somente o Proprietário principal pode excluir contas de coproprietários." : error.message; }
 }
 
+function auditRoleLabel(item) {
+  if (item.actor_role === "barber") return "Profissional";
+  return item.actor_is_primary_owner ? "Proprietário principal" : "Coproprietário";
+}
+
+function auditAreaIcon(area) {
+  return ({ Contas: "♜", Agenda: "◫", Financeiro: "▥", Equipe: "✂", Clientes: "♙", "Serviços": "◇", "Configurações": "⚙", Fechamentos: "⊘" })[area] || "✓";
+}
+
+function renderAuditLogs(items) {
+  $("audit-log-list").innerHTML = items.length ? items.map((item) => {
+    const occurredAt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: state.business?.timezone || "America/Sao_Paulo" }).format(new Date(item.created_at));
+    return `<article class="audit-log-item"><div class="audit-log-icon" aria-hidden="true">${auditAreaIcon(item.area)}</div><div class="audit-log-content"><div><strong>${escapeHtml(item.description)}</strong><span class="audit-area-badge">${escapeHtml(item.area)}</span></div><p><b>${escapeHtml(item.actor_email)}</b> · ${auditRoleLabel(item)}</p></div><time datetime="${escapeHtml(item.created_at)}">${occurredAt}</time></article>`;
+  }).join("") : '<div class="empty">Nenhuma atividade encontrada para este filtro.</div>';
+}
+
+async function loadAuditLogs() {
+  const button = $("refresh-audit-logs");
+  button.disabled = true; button.textContent = "Atualizando...";
+  try {
+    const params = new URLSearchParams({ limit: "100" });
+    if ($("audit-area").value) params.set("area", $("audit-area").value);
+    const items = await request(`/businesses/${state.me.business_id}/audit-logs?${params}`);
+    renderAuditLogs(items);
+  } catch (error) { showToast(error.message); }
+  finally { button.disabled = false; button.textContent = "Atualizar"; }
+}
+
 function openBarberAccessModal(barberId) { const barber = state.barbers.find((item) => item.id === barberId); if (!barber) return; const account = state.barberAccounts.find((item) => item.barber_id === barberId); state.accessBarberId = barberId; $("barber-access-form").reset(); $("barber-access-title").textContent = account ? "Gerenciar acesso" : "Criar acesso"; $("barber-access-professional").textContent = barber.full_name; $("barber-access-email").value = account?.email || ""; $("barber-owner-password-field").hidden = !account; $("barber-owner-password").required = Boolean(account); $("barber-access-password").required = !account; $("barber-access-password-label").textContent = account ? "Nova senha (opcional)" : "Senha inicial"; $("barber-access-password").placeholder = account ? "Deixe vazio para manter a senha" : "Mínimo de 12 caracteres"; $("barber-access-password-confirm").required = !account; $("barber-access-password-confirm-field").querySelector("span").textContent = account ? "Digite novamente a nova senha" : "Digite novamente a senha inicial"; $("barber-access-status-field").hidden = !account; $("barber-access-active").checked = account?.is_active ?? true; $("delete-barber-access").hidden = !account; $("save-barber-access-label").textContent = account ? "Salvar acesso" : "Criar acesso"; $("barber-access-error").textContent = ""; $("barber-access-modal").hidden = false; document.body.classList.add("modal-open"); setTimeout(() => $("barber-access-email").focus(), 0); }
 function closeBarberAccessModal() { $("barber-access-modal").hidden = true; document.body.classList.remove("modal-open"); state.accessBarberId = null; }
 async function createBarberAccess(event) { event.preventDefault(); const existing = state.barberAccounts.find((item) => item.barber_id === state.accessBarberId); const password = $("barber-access-password").value; const confirmation = $("barber-access-password-confirm").value; $("barber-access-error").textContent = ""; if (password !== confirmation) { $("barber-access-error").textContent = "As duas senhas não são iguais. Confira e tente novamente."; return; } $("save-barber-access").disabled = true; $("save-barber-access-label").textContent = existing ? "Salvando..." : "Criando..."; try { const payload = existing ? { current_password: $("barber-owner-password").value, email: $("barber-access-email").value.trim(), is_active: $("barber-access-active").checked, password: password || null, password_confirmation: confirmation || null } : { barber_id: state.accessBarberId, email: $("barber-access-email").value.trim(), password }; const account = await request(existing ? `/auth/barber-accounts/${state.accessBarberId}` : "/auth/barber-accounts", { method: existing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); if (existing) state.barberAccounts = state.barberAccounts.map((item) => item.id === account.id ? account : item); else state.barberAccounts.push(account); closeBarberAccessModal(); renderPeople(); showToast(existing ? "Acesso atualizado com sucesso." : "Acesso do profissional criado com sucesso."); } catch (error) { $("barber-access-error").textContent = error.message === "Current owner password is incorrect." ? "A senha atual do proprietário está incorreta." : error.message === "This professional already has a login account." ? "Este profissional já possui um acesso." : error.message === "An account with this email already exists." ? "Este e-mail já está sendo usado." : error.message; } finally { $("save-barber-access").disabled = false; $("save-barber-access-label").textContent = existing ? "Salvar acesso" : "Criar acesso"; } }
@@ -1163,6 +1192,7 @@ $("password-form").addEventListener("submit", changeOwnerPassword);
 $("email-form").addEventListener("submit", changeOwnerEmail);
 $("email-confirm-form").addEventListener("submit", confirmOwnerEmail); $("close-email-confirm").addEventListener("click", closeEmailConfirmation); $("cancel-email-confirm").addEventListener("click", closeEmailConfirmation); $("email-confirm-modal").addEventListener("click", (event) => { if (event.target === $("email-confirm-modal")) closeEmailConfirmation(); });
 $("closure-form").addEventListener("submit", createClosure); $("closure-list").addEventListener("click", (event) => { const button = event.target.closest("[data-closure-delete]"); if (button) deleteClosure(button.dataset.closureDelete); });
+$("refresh-audit-logs").addEventListener("click", loadAuditLogs); $("audit-area").addEventListener("change", loadAuditLogs);
 $("date-filter").value = localDate(); $("today-label").textContent = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).format(new Date());
 const today = localDate();
 $("goal-history-year").value = today.slice(0, 4);

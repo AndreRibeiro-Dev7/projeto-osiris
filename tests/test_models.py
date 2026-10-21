@@ -5,6 +5,7 @@ from app.database.base import Base
 def test_scheduling_models_are_registered_in_metadata() -> None:
     assert set(Base.metadata.tables) == {
         "appointments",
+        "audit_logs",
         "assistant_conversations",
         "barber_schedules",
         "barber_time_off",

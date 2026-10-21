@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request
@@ -8,6 +9,10 @@ from starlette.responses import Response
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
+from app.database.session import async_session_factory
+from app.services.audit import record_activity
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -29,6 +34,22 @@ def create_app() -> FastAPI:
     ) -> Response:
         """Apply browser security controls to API and dashboard responses."""
         response = await call_next(request)
+        current_user = getattr(request.state, "current_user", None)
+        if (
+            current_user is not None
+            and request.method in {"POST", "PUT", "PATCH", "DELETE"}
+            and 200 <= response.status_code < 400
+        ):
+            try:
+                async with async_session_factory() as session:
+                    await record_activity(
+                        session,
+                        user=current_user,
+                        method=request.method,
+                        path=request.url.path,
+                    )
+            except Exception:
+                logger.exception("Could not persist the audit activity")
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
