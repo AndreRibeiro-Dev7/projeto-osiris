@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -50,15 +50,15 @@ async function boot() {
   try {
     state.me = await request("/auth/me");
     if (state.me.role === "barber") { await bootBarber(); return; }
-    [state.business, state.barbers, state.barberAccounts, state.customers, state.customerPortfolio, state.services] = await Promise.all([
-      request(`/businesses/${state.me.business_id}`), request(`/businesses/${state.me.business_id}/barbers`), request("/auth/barber-accounts"), request(`/businesses/${state.me.business_id}/customers`), request(`/businesses/${state.me.business_id}/customers/portfolio`), request(`/businesses/${state.me.business_id}/services`)
+    [state.business, state.barbers, state.barberAccounts, state.ownerAccounts, state.customers, state.customerPortfolio, state.services] = await Promise.all([
+      request(`/businesses/${state.me.business_id}`), request(`/businesses/${state.me.business_id}/barbers`), request("/auth/barber-accounts"), request("/auth/owner-accounts"), request(`/businesses/${state.me.business_id}/customers`), request(`/businesses/${state.me.business_id}/customers/portfolio`), request(`/businesses/${state.me.business_id}/services`)
     ]);
     document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("open-account-security").hidden = false; $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; document.querySelector("#agenda-panel .title-row h1").textContent = "Agenda"; document.querySelector("#agenda-panel .title-row .muted").textContent = "Organize os atendimentos por profissional e data.";
     $("loading-view").hidden = true; $("app-view").hidden = false; window.scrollTo(0, 0); $("user-email").textContent = state.me.email; $("business-name").textContent = state.business.name;
     $("business-settings-name").value = state.business.name; $("business-settings-phone").value = state.business.phone; $("business-settings-timezone").value = state.business.timezone; $("loyalty-enabled").checked = state.business.loyalty_enabled; $("loyalty-target").value = state.business.loyalty_target; $("loyalty-reward").value = state.business.loyalty_reward; $("revenue-goal-input").value = (state.business.monthly_revenue_goal_cents / 100).toFixed(2); $("current-email").value = state.me.email; $("save-email-label").textContent = "Enviar código";
     const publicLink = `${location.origin}/dashboard/booking/?business_id=${state.me.business_id}`; $("public-booking-link").value = publicLink; $("open-booking-link").href = publicLink;
     $("barber-filter").innerHTML = `<option value="all">Todos os profissionais</option>${state.barbers.map((b) => `<option value="${b.id}">${escapeHtml(b.full_name)}</option>`).join("")}`;
-    renderPeople(); renderCustomerRanking(); await loadAgenda(); await loadHome();
+    renderPeople(); renderCustomerRanking(); renderOwnerAccounts(); await loadAgenda(); await loadHome();
   } catch (error) { logout(); $("login-error").textContent = error.message; }
 }
 
@@ -82,10 +82,11 @@ async function bootBarber() {
 
 async function refreshReferenceData() {
   const selectedBarber = $("barber-filter").value || "all";
-  [state.business, state.barbers, state.barberAccounts, state.customers, state.customerPortfolio, state.services] = await Promise.all([
+  [state.business, state.barbers, state.barberAccounts, state.ownerAccounts, state.customers, state.customerPortfolio, state.services] = await Promise.all([
     request(`/businesses/${state.me.business_id}`),
     request(`/businesses/${state.me.business_id}/barbers`),
     request("/auth/barber-accounts"),
+    request("/auth/owner-accounts"),
     request(`/businesses/${state.me.business_id}/customers`),
     request(`/businesses/${state.me.business_id}/customers/portfolio`),
     request(`/businesses/${state.me.business_id}/services`),
@@ -95,6 +96,7 @@ async function refreshReferenceData() {
   $("barber-filter").value = state.barbers.some((barber) => barber.id === selectedBarber) ? selectedBarber : "all";
   renderPeople();
   renderCustomerRanking();
+  renderOwnerAccounts();
 }
 
 async function refreshActiveView() {
@@ -926,6 +928,67 @@ function sendWhatsAppReminder(id) {
 }
 function logout() { sessionStorage.removeItem("osiris_token"); state.token = null; state.me = null; document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; $("loading-view").hidden = true; $("app-view").hidden = true; $("login-view").hidden = false; window.scrollTo(0, 0); }
 
+function renderOwnerAccounts() {
+  if (!$("owner-account-list")) return;
+  $("owner-account-list").innerHTML = state.ownerAccounts.map((account) => `<article class="owner-account-card ${account.is_current ? "current" : ""} ${account.is_active ? "" : "inactive"}"><div class="owner-account-card-head"><div><h3>${escapeHtml(account.email)}</h3><p>${account.is_current ? "Sua conta atual" : "Coproprietário"}</p></div><span class="owner-account-status">${account.is_active ? "Ativo" : "Desativado"}</span></div>${account.is_current ? "" : `<button data-owner-account-id="${account.id}" type="button">Gerenciar acesso</button>`}</article>`).join("") || '<div class="empty">Nenhuma conta administrativa encontrada.</div>';
+}
+
+function openOwnerAccountModal(accountId = null) {
+  const account = state.ownerAccounts.find((item) => item.id === accountId) || null;
+  if (account?.is_current) return;
+  state.managingOwnerId = account?.id || null;
+  $("owner-account-form").reset();
+  $("owner-account-title").textContent = account ? "Gerenciar coproprietário" : "Novo coproprietário";
+  $("owner-account-subtitle").textContent = account ? account.email : "Acesso completo ao painel da barbearia.";
+  $("owner-account-email").value = account?.email || "";
+  $("owner-account-password").required = !account;
+  $("owner-account-password-confirmation").required = !account;
+  $("owner-account-password-label").textContent = account ? "Nova senha (opcional)" : "Senha inicial";
+  $("owner-account-password").placeholder = account ? "Deixe vazio para manter a senha" : "Mínimo de 12 caracteres";
+  $("owner-account-status-field").hidden = !account;
+  $("owner-account-active").checked = account?.is_active ?? true;
+  $("delete-owner-account").hidden = !account;
+  $("save-owner-account-label").textContent = account ? "Salvar acesso" : "Criar acesso";
+  $("owner-account-error").textContent = "";
+  $("owner-account-modal").hidden = false;
+  document.body.classList.add("modal-open");
+  setTimeout(() => $("owner-account-email").focus(), 0);
+}
+
+function closeOwnerAccountModal() { state.managingOwnerId = null; $("owner-account-modal").hidden = true; document.body.classList.remove("modal-open"); }
+
+async function saveOwnerAccount(event) {
+  event.preventDefault();
+  const existing = state.ownerAccounts.find((item) => item.id === state.managingOwnerId);
+  const password = $("owner-account-password").value;
+  const confirmation = $("owner-account-password-confirmation").value;
+  $("owner-account-error").textContent = "";
+  if (password !== confirmation) { $("owner-account-error").textContent = "As duas senhas não são iguais."; return; }
+  $("save-owner-account").disabled = true;
+  $("save-owner-account-label").textContent = existing ? "Salvando..." : "Criando...";
+  try {
+    const payload = { current_password: $("owner-account-current-password").value, email: $("owner-account-email").value.trim(), password: password || null, password_confirmation: confirmation || null };
+    if (existing) payload.is_active = $("owner-account-active").checked;
+    const account = await request(existing ? `/auth/owner-accounts/${existing.id}` : "/auth/owner-accounts", { method: existing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (existing) state.ownerAccounts = state.ownerAccounts.map((item) => item.id === account.id ? account : item); else state.ownerAccounts.push(account);
+    closeOwnerAccountModal(); renderOwnerAccounts(); showToast(existing ? "Acesso do coproprietário atualizado." : "Coproprietário criado com sucesso.");
+  } catch (error) { $("owner-account-error").textContent = error.message.includes("Current owner password") ? "Sua senha atual está incorreta." : error.message.includes("already exists") ? "Este e-mail já está sendo utilizado." : error.message; }
+  finally { $("save-owner-account").disabled = false; $("save-owner-account-label").textContent = existing ? "Salvar acesso" : "Criar acesso"; }
+}
+
+async function deleteOwnerAccount() {
+  const account = state.ownerAccounts.find((item) => item.id === state.managingOwnerId);
+  if (!account) return;
+  const currentPassword = $("owner-account-current-password").value;
+  if (!currentPassword) { $("owner-account-error").textContent = "Confirme sua senha atual antes de excluir."; return; }
+  const confirmed = await confirmAction({ eyebrow: "ACESSO ADMINISTRATIVO", title: "Excluir coproprietário", detail: account.email, message: "Esta conta perderá imediatamente o acesso. Os dados da barbearia serão preservados.", confirmLabel: "Excluir acesso", variant: "danger" });
+  if (!confirmed) { document.body.classList.add("modal-open"); return; }
+  try {
+    await request(`/auth/owner-accounts/${account.id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current_password: currentPassword }) });
+    state.ownerAccounts = state.ownerAccounts.filter((item) => item.id !== account.id); closeOwnerAccountModal(); renderOwnerAccounts(); showToast("Acesso do coproprietário excluído.");
+  } catch (error) { document.body.classList.add("modal-open"); $("owner-account-error").textContent = error.message.includes("Current owner password") ? "Sua senha atual está incorreta." : error.message; }
+}
+
 function openBarberAccessModal(barberId) { const barber = state.barbers.find((item) => item.id === barberId); if (!barber) return; const account = state.barberAccounts.find((item) => item.barber_id === barberId); state.accessBarberId = barberId; $("barber-access-form").reset(); $("barber-access-title").textContent = account ? "Gerenciar acesso" : "Criar acesso"; $("barber-access-professional").textContent = barber.full_name; $("barber-access-email").value = account?.email || ""; $("barber-owner-password-field").hidden = !account; $("barber-owner-password").required = Boolean(account); $("barber-access-password").required = !account; $("barber-access-password-label").textContent = account ? "Nova senha (opcional)" : "Senha inicial"; $("barber-access-password").placeholder = account ? "Deixe vazio para manter a senha" : "Mínimo de 12 caracteres"; $("barber-access-password-confirm").required = !account; $("barber-access-password-confirm-field").querySelector("span").textContent = account ? "Digite novamente a nova senha" : "Digite novamente a senha inicial"; $("barber-access-status-field").hidden = !account; $("barber-access-active").checked = account?.is_active ?? true; $("delete-barber-access").hidden = !account; $("save-barber-access-label").textContent = account ? "Salvar acesso" : "Criar acesso"; $("barber-access-error").textContent = ""; $("barber-access-modal").hidden = false; document.body.classList.add("modal-open"); setTimeout(() => $("barber-access-email").focus(), 0); }
 function closeBarberAccessModal() { $("barber-access-modal").hidden = true; document.body.classList.remove("modal-open"); state.accessBarberId = null; }
 async function createBarberAccess(event) { event.preventDefault(); const existing = state.barberAccounts.find((item) => item.barber_id === state.accessBarberId); const password = $("barber-access-password").value; const confirmation = $("barber-access-password-confirm").value; $("barber-access-error").textContent = ""; if (password !== confirmation) { $("barber-access-error").textContent = "As duas senhas não são iguais. Confira e tente novamente."; return; } $("save-barber-access").disabled = true; $("save-barber-access-label").textContent = existing ? "Salvando..." : "Criando..."; try { const payload = existing ? { current_password: $("barber-owner-password").value, email: $("barber-access-email").value.trim(), is_active: $("barber-access-active").checked, password: password || null, password_confirmation: confirmation || null } : { barber_id: state.accessBarberId, email: $("barber-access-email").value.trim(), password }; const account = await request(existing ? `/auth/barber-accounts/${state.accessBarberId}` : "/auth/barber-accounts", { method: existing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); if (existing) state.barberAccounts = state.barberAccounts.map((item) => item.id === account.id ? account : item); else state.barberAccounts.push(account); closeBarberAccessModal(); renderPeople(); showToast(existing ? "Acesso atualizado com sucesso." : "Acesso do profissional criado com sucesso."); } catch (error) { $("barber-access-error").textContent = error.message === "Current owner password is incorrect." ? "A senha atual do proprietário está incorreta." : error.message === "This professional already has a login account." ? "Este profissional já possui um acesso." : error.message === "An account with this email already exists." ? "Este e-mail já está sendo usado." : error.message; } finally { $("save-barber-access").disabled = false; $("save-barber-access-label").textContent = existing ? "Salvar acesso" : "Criar acesso"; } }
@@ -1033,6 +1096,7 @@ async function confirmOwnerEmail(event) {
 }
 
 $("login-form").addEventListener("submit", login); $("logout").addEventListener("click", logout); $("logout-header").addEventListener("click", logout); $("open-account-security").addEventListener("click", openAccountSecurity); $("close-account-security").addEventListener("click", closeAccountSecurity); $("account-security-modal").addEventListener("click", (event) => { if (event.target === $("account-security-modal")) closeAccountSecurity(); }); $("account-email-form").addEventListener("submit", changeAccountEmail); $("account-password-form").addEventListener("submit", changeAccountPassword); $("refresh").addEventListener("click", loadAgenda); $("date-filter").addEventListener("change", loadAgenda); $("barber-filter").addEventListener("change", loadAgenda);
+$("new-owner-account").addEventListener("click", () => openOwnerAccountModal()); $("owner-account-list").addEventListener("click", (event) => { const button = event.target.closest("[data-owner-account-id]"); if (button) openOwnerAccountModal(button.dataset.ownerAccountId); }); $("owner-account-form").addEventListener("submit", saveOwnerAccount); $("delete-owner-account").addEventListener("click", deleteOwnerAccount); $("close-owner-account").addEventListener("click", closeOwnerAccountModal); $("cancel-owner-account").addEventListener("click", closeOwnerAccountModal); $("owner-account-modal").addEventListener("click", (event) => { if (event.target === $("owner-account-modal")) closeOwnerAccountModal(); });
 $("previous-day").addEventListener("click", () => moveAgendaDate(-1)); $("today-button").addEventListener("click", goToToday); $("next-day").addEventListener("click", () => moveAgendaDate(1));
 $("agenda-search").addEventListener("input", () => renderAppointments(state.appointments)); $("agenda-status").addEventListener("change", () => renderAppointments(state.appointments));
 $("new-appointment").addEventListener("click", openAppointmentModal); $("close-appointment").addEventListener("click", closeAppointmentModal); $("cancel-appointment-form").addEventListener("click", closeAppointmentModal); $("appointment-barber").addEventListener("change", loadBookingSlots); $("appointment-date").addEventListener("change", loadBookingSlots); $("appointment-service").addEventListener("change", renderBookingSlots); $("appointment-form").addEventListener("submit", createAppointment);

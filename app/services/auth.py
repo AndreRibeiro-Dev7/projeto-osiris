@@ -87,6 +87,96 @@ class AuthService:
         await self._session.refresh(user)
         return user
 
+    async def create_owner_account(
+        self,
+        *,
+        owner: User,
+        current_password: str,
+        email: str,
+        password: str,
+        password_confirmation: str,
+    ) -> User:
+        """Create an additional account with full access to the same business."""
+        if owner.role != "owner" or not verify_password(current_password, owner.password_hash):
+            raise InvalidCredentialsError("Current owner password is incorrect.")
+        if password != password_confirmation:
+            raise InvalidCredentialsError("The new password and confirmation must match.")
+        if await self._users.get_by_email(email) is not None:
+            raise DuplicateResourceError("An account with this email already exists.")
+        user = await self._users.create(
+            business_id=owner.business_id,
+            email=email,
+            password_hash=hash_password(password),
+            role="owner",
+        )
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError("The co-owner account could not be created.") from error
+        await self._session.refresh(user)
+        return user
+
+    async def update_owner_account(
+        self,
+        *,
+        owner: User,
+        account_id: UUID,
+        current_password: str,
+        email: str | None,
+        password: str | None,
+        password_confirmation: str | None,
+        is_active: bool | None,
+    ) -> User:
+        """Update another owner account without allowing self-suspension."""
+        account = await self._users.get_by_id(account_id)
+        if (
+            owner.role != "owner"
+            or account is None
+            or account.business_id != owner.business_id
+            or account.role != "owner"
+            or account.id == owner.id
+        ):
+            raise ResourceNotFoundError("Co-owner account not found.")
+        if not verify_password(current_password, owner.password_hash):
+            raise InvalidCredentialsError("Current owner password is incorrect.")
+        if password != password_confirmation:
+            raise InvalidCredentialsError("The new password and confirmation must match.")
+        if email is not None:
+            existing = await self._users.get_by_email(email)
+            if existing is not None and existing.id != account.id:
+                raise DuplicateResourceError("An account with this email already exists.")
+            account.email = email.lower()
+        if password is not None:
+            account.password_hash = hash_password(password)
+        if is_active is not None:
+            account.is_active = is_active
+        try:
+            await self._session.commit()
+        except IntegrityError as error:
+            await self._session.rollback()
+            raise DuplicateResourceError("The co-owner account could not be updated.") from error
+        await self._session.refresh(account)
+        return account
+
+    async def delete_owner_account(
+        self, *, owner: User, account_id: UUID, current_password: str
+    ) -> None:
+        """Delete another owner account while preserving the acting owner."""
+        account = await self._users.get_by_id(account_id)
+        if (
+            owner.role != "owner"
+            or account is None
+            or account.business_id != owner.business_id
+            or account.role != "owner"
+            or account.id == owner.id
+        ):
+            raise ResourceNotFoundError("Co-owner account not found.")
+        if not verify_password(current_password, owner.password_hash):
+            raise InvalidCredentialsError("Current owner password is incorrect.")
+        await self._session.delete(account)
+        await self._session.commit()
+
     async def update_barber_account(
         self,
         *,

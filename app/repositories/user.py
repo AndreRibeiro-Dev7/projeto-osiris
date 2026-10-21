@@ -37,6 +37,14 @@ class UserRepository:
         )
         return list(await self._session.scalars(statement))
 
+    async def list_owner_accounts(self, business_id: UUID) -> list[User]:
+        statement = (
+            select(User)
+            .where(User.business_id == business_id, User.role == "owner")
+            .order_by(User.created_at, User.email)
+        )
+        return list(await self._session.scalars(statement))
+
     async def create(
         self,
         *,

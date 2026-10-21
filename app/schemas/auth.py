@@ -61,6 +61,54 @@ class CurrentUserResponse(BaseModel):
     barber_id: UUID | None = None
 
 
+class OwnerAccountCreate(BaseModel):
+    """Credentials for an additional account with full owner access."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+    password_confirmation: str = Field(min_length=12, max_length=128)
+
+    @model_validator(mode="after")
+    def matching_password_confirmation(self) -> "OwnerAccountCreate":
+        if self.password != self.password_confirmation:
+            raise ValueError("The new password and confirmation must match.")
+        return self
+
+
+class OwnerAccountUpdate(BaseModel):
+    """Owner-controlled changes to another owner account."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+    email: EmailStr | None = None
+    password: str | None = Field(default=None, min_length=12, max_length=128)
+    password_confirmation: str | None = Field(default=None, min_length=12, max_length=128)
+    is_active: bool | None = None
+
+    @model_validator(mode="after")
+    def matching_password_confirmation(self) -> "OwnerAccountUpdate":
+        if self.password != self.password_confirmation:
+            raise ValueError("The new password and confirmation must match.")
+        return self
+
+
+class OwnerAccountDelete(BaseModel):
+    """Current owner password required before deleting another owner."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+
+
+class OwnerAccountResponse(BaseModel):
+    """Safe representation of an account with full owner access."""
+
+    id: UUID
+    business_id: UUID
+    email: EmailStr
+    is_active: bool
+    is_current: bool
+    created_at: datetime
+
+
 class BarberAccountCreate(BaseModel):
     """Credentials created by an owner for one professional."""
 

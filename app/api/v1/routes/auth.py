@@ -39,6 +39,10 @@ from app.schemas.auth import (
     EmailChangeConfirmRequest,
     EmailChangeRequest,
     EmailChangeRequestedResponse,
+    OwnerAccountCreate,
+    OwnerAccountDelete,
+    OwnerAccountResponse,
+    OwnerAccountUpdate,
     OwnerBootstrapRequest,
     PasswordChangeRequest,
     TokenResponse,
@@ -140,6 +144,97 @@ def require_owner_account(user: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the owner can change account credentials.",
         )
+
+
+def owner_account_response(account: User, current_user: User) -> OwnerAccountResponse:
+    return OwnerAccountResponse(
+        id=account.id,
+        business_id=account.business_id,
+        email=account.email,
+        is_active=account.is_active,
+        is_current=account.id == current_user.id,
+        created_at=account.created_at,
+    )
+
+
+@router.get("/owner-accounts", response_model=list[OwnerAccountResponse])
+async def list_owner_accounts(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[OwnerAccountResponse]:
+    """List all owner accounts belonging to the authenticated business."""
+    require_owner_account(current_user)
+    accounts = await UserRepository(session).list_owner_accounts(current_user.business_id)
+    return [owner_account_response(account, current_user) for account in accounts]
+
+
+@router.post(
+    "/owner-accounts",
+    response_model=OwnerAccountResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_owner_account(
+    payload: OwnerAccountCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> OwnerAccountResponse:
+    """Create a co-owner with full access to the authenticated business."""
+    require_owner_account(current_user)
+    try:
+        account = await AuthService(session).create_owner_account(
+            owner=current_user, **payload.model_dump()
+        )
+    except InvalidCredentialsError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    except DuplicateResourceError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return owner_account_response(account, current_user)
+
+
+@router.patch("/owner-accounts/{account_id}", response_model=OwnerAccountResponse)
+async def update_owner_account(
+    account_id: UUID,
+    payload: OwnerAccountUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> OwnerAccountResponse:
+    """Update or suspend another owner account."""
+    require_owner_account(current_user)
+    try:
+        account = await AuthService(session).update_owner_account(
+            owner=current_user,
+            account_id=account_id,
+            **payload.model_dump(),
+        )
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except InvalidCredentialsError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    except DuplicateResourceError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return owner_account_response(account, current_user)
+
+
+@router.delete("/owner-accounts/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_owner_account(
+    account_id: UUID,
+    payload: OwnerAccountDelete,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Delete another owner account without affecting business data."""
+    require_owner_account(current_user)
+    try:
+        await AuthService(session).delete_owner_account(
+            owner=current_user,
+            account_id=account_id,
+            current_password=payload.current_password,
+        )
+    except ResourceNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except InvalidCredentialsError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

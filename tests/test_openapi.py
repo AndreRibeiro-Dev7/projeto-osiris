@@ -45,6 +45,15 @@ def test_restricted_barber_routes_are_exposed() -> None:
     assert "/api/v1/auth/barber/appointments/{appointment_id}/no-show" in paths
 
 
+def test_co_owner_management_routes_are_exposed() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "get" in paths["/api/v1/auth/owner-accounts"]
+    assert "post" in paths["/api/v1/auth/owner-accounts"]
+    assert "patch" in paths["/api/v1/auth/owner-accounts/{account_id}"]
+    assert "delete" in paths["/api/v1/auth/owner-accounts/{account_id}"]
+
+
 def test_customer_update_route_is_exposed() -> None:
     route = app.openapi()["paths"]["/api/v1/businesses/{business_id}/customers/{customer_id}"]
 
