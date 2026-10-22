@@ -1,5 +1,5 @@
 const API = "/api/v1";
-const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, passwordResetRequested: false, loginLockUntil: null, loginLockTimer: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
+const state = { token: sessionStorage.getItem("osiris_token"), me: null, business: null, barbers: [], barberAccounts: [], ownerAccounts: [], customers: [], customerPortfolio: [], customerSegment: "all", services: [], appointments: [], bookingSlots: [], financialReport: null, financialChartZoom: 1, financialChartPoints: [], financialChartPeriod: "day", expensePeriodItems: [], homeExpenses: [], expenseAnalysisText: "", personKind: null, editingCustomerId: null, editingBarberId: null, editingServiceId: null, editingExpenseId: null, accessBarberId: null, managingOwnerId: null, pendingEmail: null, passwordResetRequested: false, loginLockUntil: null, loginLockTimer: null, sessionExpiresAt: null, scheduleBarberId: null, scheduleExistingWeekdays: [], timeOffBarberId: null, detailAppointmentId: null, paymentAppointmentId: null, rescheduleAppointmentId: null, refreshInFlight: false, confirmationResolver: null };
 const $ = (id) => document.getElementById(id);
 const localDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const authHeaders = () => ({ Authorization: `Bearer ${state.token}` });
@@ -40,6 +40,30 @@ function formatLoginWait(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function scheduleSessionExpiry() {
+  state.sessionExpiresAt = null;
+  if (!state.token) return;
+  try {
+    const encoded = state.token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")));
+    if (Number.isFinite(payload.exp)) state.sessionExpiresAt = payload.exp * 1000;
+  } catch { state.sessionExpiresAt = null; }
+  updateSessionExpiry();
+}
+
+function updateSessionExpiry() {
+  if (!state.token || !state.sessionExpiresAt) { $("session-expiry-warning").hidden = true; return; }
+  const remaining = Math.max(0, Math.ceil((state.sessionExpiresAt - Date.now()) / 1000));
+  if (!remaining) {
+    logout();
+    $("login-error").textContent = "Sua sessão expirou. Entre novamente para continuar.";
+    return;
+  }
+  if (remaining > 300) { $("session-expiry-warning").hidden = true; return; }
+  $("session-expiry-countdown").textContent = formatLoginWait(remaining);
+  $("session-expiry-warning").hidden = false;
+}
+
 function updateLoginCountdown() {
   const remaining = Math.max(0, Math.ceil((state.loginLockUntil - Date.now()) / 1000));
   if (!remaining) {
@@ -76,7 +100,7 @@ async function login(event) {
       return;
     }
     const raw = await response.text(); let data = {}; try { data = JSON.parse(raw); } catch { data = { detail: response.ok ? raw : "O servidor não conseguiu acessar o banco de dados." }; } if (!response.ok) throw new Error(data.detail || "E-mail ou senha incorretos.");
-    state.token = data.access_token; sessionStorage.setItem("osiris_token", state.token); await boot();
+    state.token = data.access_token; sessionStorage.setItem("osiris_token", state.token); scheduleSessionExpiry(); await boot();
   } catch (error) { $("login-error").textContent = error.message === "Incorrect email or password." ? "E-mail ou senha incorretos." : error.message; }
   finally {
     if (state.loginLockUntil && state.loginLockUntil > Date.now()) updateLoginCountdown();
@@ -1015,7 +1039,7 @@ function sendWhatsAppReminder(id) {
   const greetingName = customerName.split(" ")[0]; const confirmationLink = `${location.origin}/dashboard/booking/?booking_token=${appointment.public_token}`; const message = `Olá, ${greetingName}! Lembramos que você tem ${serviceName} agendado na ${state.business.name}, ${formatAppointmentDate(appointment.starts_at)}, às ${formatTime(appointment.starts_at)}. Confirme sua presença ou cancele pelo link: ${confirmationLink}`;
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
 }
-function logout() { sessionStorage.removeItem("osiris_token"); state.token = null; state.me = null; document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; $("loading-view").hidden = true; $("app-view").hidden = true; $("login-view").hidden = false; window.scrollTo(0, 0); }
+function logout() { sessionStorage.removeItem("osiris_token"); state.token = null; state.me = null; state.sessionExpiresAt = null; $("session-expiry-warning").hidden = true; document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; $("loading-view").hidden = true; $("app-view").hidden = true; $("login-view").hidden = false; window.scrollTo(0, 0); }
 
 function renderOwnerAccounts() {
   if (!$("owner-account-list")) return;
@@ -1309,6 +1333,8 @@ const previousMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.
 $("comparison-month-a").value = previousMonth.toISOString().slice(0, 7);
 $("export-report").textContent = "Exportar Excel";
 window.setInterval(refreshActiveView, 30000);
+window.setInterval(updateSessionExpiry, 1000);
+$("session-expiry-logout").addEventListener("click", logout);
 window.addEventListener("focus", refreshActiveView);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshActiveView(); });
-if (state.token) boot();
+if (state.token) { scheduleSessionExpiry(); if (state.token) boot(); }

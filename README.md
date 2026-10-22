@@ -57,6 +57,7 @@ implementação está coberta por **66 testes automatizados**.
 - Senhas protegidas com Argon2 e dados isolados por barbearia.
 - Bloqueio de 15 minutos, com contagem regressiva, após cinco tentativas de login inválido.
 - Encerramento imediato de todas as sessões mediante confirmação da senha atual.
+- Aviso regressivo nos cinco minutos finais e saída automática ao expirar a sessão.
 - Configurações da empresa e da conta atualizadas pelo painel.
 - Documentação interativa com OpenAPI/Swagger.
 
