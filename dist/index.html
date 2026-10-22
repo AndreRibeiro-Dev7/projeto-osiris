@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0b110e" />
     <title>Osiris — Gestão da barbearia</title>
     <link rel="icon" href="/dashboard/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-46" />
+    <link rel="stylesheet" href="/dashboard/styles.css?v=20261021-47" />
     <style>.card-actions .wide{grid-column:1/-1}.person-card.inactive{opacity:.68}.settings-card{max-width:760px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:32px}.settings-card+.settings-card{margin-top:22px}.settings-card form{display:grid;gap:20px}.settings-card .primary{justify-self:end;min-width:210px}.settings-note{color:var(--soft);font-size:13px;line-height:1.5;margin:0}</style>
   </head>
   <body>
@@ -41,7 +41,8 @@
     </section>
 
     <div id="app-view" class="app-shell" hidden>
-      <aside>
+      <button id="sidebar-backdrop" class="sidebar-backdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button>
+      <aside id="app-sidebar">
         <div class="login-brand"><div class="brand-mark">O</div><span>OSIRIS</span></div>
         <nav>
           <button class="nav-item active" data-view="inicio"><span>⌂</span> Visão geral</button>
@@ -63,7 +64,7 @@
       </aside>
       <div class="workspace">
         <header>
-          <button id="menu" class="menu" aria-label="Abrir menu">☰</button>
+          <button id="menu" class="menu" type="button" aria-label="Abrir menu" aria-controls="app-sidebar" aria-expanded="false">☰</button>
           <div><p class="eyebrow" id="today-label"></p><h2 id="business-name">Painel Osiris</h2></div>
           <div class="header-account-actions"><span class="status-dot">API conectada</span><button id="open-account-security" class="logout-button account-button" type="button" aria-label="Minha conta"><span aria-hidden="true">♙</span><span>Minha conta</span></button><button id="logout-header" class="logout-button" type="button" aria-label="Sair da conta"><span aria-hidden="true">↪</span><span>Sair da conta</span></button></div>
         </header>
@@ -264,6 +265,6 @@
     </div>
     <div id="toast" role="status"></div>
     <section id="session-expiry-warning" class="session-expiry-warning" role="status" hidden><div><p class="eyebrow">SESSÃO EXPIRANDO</p><strong id="session-expiry-countdown">05:00</strong><span>Salve seu trabalho. Você será desconectado automaticamente.</span></div><button id="session-expiry-logout" type="button">Sair agora</button></section>
-    <script src="/dashboard/app.js?v=20261021-85" defer></script>
+    <script src="/dashboard/app.js?v=20261021-86" defer></script>
   </body>
 </html>
