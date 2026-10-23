@@ -14,7 +14,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 
 ## 2. Infraestrutura
 
-- [ ] Publicar a API em um serviço com reinício automático e health check.
+- [x] Publicar a API em um serviço com reinício automático e health check.
 - [ ] Configurar domínio próprio e HTTPS obrigatório.
 - [ ] Usar PostgreSQL gerenciado, sem acesso público desnecessário.
 - [ ] Separar as configurações de desenvolvimento, homologação e produção.
@@ -43,6 +43,8 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 ## 5. Observabilidade
 
 - [ ] Centralizar logs sem registrar senhas, tokens ou dados sensíveis.
+- [x] Configurar monitor automático da API, banco e alerta ao proprietário.
+- [ ] Validar a primeira execução e o ciclo de abertura e recuperação do alerta.
 - [ ] Monitorar disponibilidade, latência, erros e conexões com o banco.
 - [ ] Criar alertas para falhas de login, e-mail, IA e integrações.
 - [ ] Registrar métricas de agendamento e tarefas financeiras críticas.

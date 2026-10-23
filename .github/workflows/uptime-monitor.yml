@@ -1,0 +1,141 @@
+name: Production uptime monitor
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: production-uptime-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  BASE_URL: https://osiris-api-5ujk.onrender.com
+  INCIDENT_TITLE: "[Monitoramento] Osiris indisponivel"
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check API and database
+        id: health
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          report="$RUNNER_TEMP/health-report.txt"
+          : > "$report"
+
+          check_endpoint() {
+            label="$1"
+            url="$2"
+            response="$(curl \
+              --silent \
+              --show-error \
+              --fail-with-body \
+              --location \
+              --max-time 120 \
+              --retry 1 \
+              --retry-delay 15 \
+              --retry-all-errors \
+              --write-out $'\n%{http_code}' \
+              "$url" 2>&1)"
+            curl_status=$?
+            http_status="$(printf '%s\n' "$response" | tail -n 1)"
+            body="$(printf '%s\n' "$response" | sed '$d')"
+
+            printf '%s' "$body" | python -c \
+              'import json, sys; data = json.load(sys.stdin); raise SystemExit(0 if data.get("status") == "ok" else 1)' \
+              >/dev/null 2>&1
+            body_status=$?
+
+            if [ "$curl_status" -eq 0 ] && [ "$http_status" = "200" ] && [ "$body_status" -eq 0 ]; then
+              echo "$label: saudavel (HTTP $http_status)" >> "$report"
+              return 0
+            fi
+
+            echo "$label: falha (curl=$curl_status, HTTP=$http_status, resposta=${body:0:300})" >> "$report"
+            return 1
+          }
+
+          api_ok=false
+          database_ok=false
+          check_endpoint "API" "$BASE_URL/api/v1/health" && api_ok=true
+          check_endpoint "Banco" "$BASE_URL/api/v1/health/database" && database_ok=true
+
+          if [ "$api_ok" = true ] && [ "$database_ok" = true ]; then
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          {
+            echo "report<<OSIRIS_REPORT"
+            cat "$report"
+            echo "OSIRIS_REPORT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open incident on failure
+        if: steps.health.outputs.healthy != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          REPORT: ${{ steps.health.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing_issue="$(gh issue list \
+            --repo "$GH_REPO" \
+            --state open \
+            --search "$INCIDENT_TITLE in:title" \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [ -z "$existing_issue" ]; then
+            body="Falha detectada pelo monitor automatico de producao.
+
+            $REPORT
+
+            Execucao: $RUN_URL
+            Data UTC: $(date -u +'%Y-%m-%d %H:%M:%S')"
+            gh issue create \
+              --repo "$GH_REPO" \
+              --title "$INCIDENT_TITLE" \
+              --body "$body" \
+              --assignee "$REPOSITORY_OWNER"
+          fi
+
+      - name: Close incident after recovery
+        if: steps.health.outputs.healthy == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          existing_issue="$(gh issue list \
+            --repo "$GH_REPO" \
+            --state open \
+            --search "$INCIDENT_TITLE in:title" \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [ -n "$existing_issue" ]; then
+            gh issue close "$existing_issue" \
+              --repo "$GH_REPO" \
+              --comment "Servico recuperado e validado automaticamente. Execucao: $RUN_URL"
+          fi
+
+      - name: Fail workflow when production is unavailable
+        if: steps.health.outputs.healthy != 'true'
+        env:
+          REPORT: ${{ steps.health.outputs.report }}
+        run: |
+          printf '%s\n' "$REPORT"
+          exit 1

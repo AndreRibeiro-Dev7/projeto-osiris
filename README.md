@@ -197,7 +197,7 @@ e à operação comercial:
 
 - Implantar aplicação e banco gerenciado com domínio próprio e HTTPS.
 - Executar periodicamente um teste de restauração em banco isolado.
-- Adicionar logs centralizados, monitoramento e alertas de indisponibilidade.
+- Adicionar logs centralizados e métricas detalhadas de latência e erros.
 - Concluir a integração oficial com WhatsApp e calendário.
 - Usar domínio verificado para melhorar a entrega dos e-mails transacionais.
 - Ampliar testes de autorização, isolamento, interface e carga.
@@ -210,6 +210,8 @@ As instruções técnicas estão no
 [Guia de publicação](./docs/deployment.md).
 O procedimento de proteção dos dados está no
 [Guia de backup e recuperação](./docs/backups.md).
+O monitor de disponibilidade está descrito no
+[Guia de monitoramento e alertas](./docs/monitoring.md).
 O repositório também inclui um `render.yaml` para a primeira homologação online.
 
 ## Autor
