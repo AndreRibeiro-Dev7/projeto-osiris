@@ -47,9 +47,11 @@ Em 23 de outubro de 2026, as três primeiras execuções agendadas foram conclu�
 com sucesso. Cada execução confirmou a disponibilidade da API e a conexão com o
 banco em aproximadamente 40 a 50 segundos.
 
-Permanece pendente um teste controlado do ciclo de incidente: simular uma falha,
-confirmar a abertura da ocorrência e depois validar o encerramento automático na
-execução saudável seguinte. Esse teste não deve interromper a API de produção.
+No mesmo dia, o ciclo de incidente também foi validado sem interromper a API de
+produção. A execução manual `#5`, em modo `simulate-failure`, abriu a ocorrência
+`#1` e terminou com falha intencional. A execução `#6`, em modo `health-check`,
+validou API e banco, publicou a recuperação e encerrou a ocorrência
+automaticamente.
 
 O acionamento manual oferece o seletor `run_mode`. Para testar o alerta, escolha
 `simulate-failure`. Esse modo não consulta nem interrompe a produção: apenas
