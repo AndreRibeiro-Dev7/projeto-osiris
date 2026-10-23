@@ -20,7 +20,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [ ] Separar as configurações de desenvolvimento, homologação e produção.
 - [ ] Armazenar segredos no serviço de hospedagem, nunca no repositório.
 - [x] Confirmar backup contínuo e recuperação ponto a ponto do Render Postgres pago.
-- [ ] Testar uma restauração completa em banco vazio e isolado.
+- [x] Testar uma restauração completa em banco vazio e isolado.
 
 ## 3. Segurança e proteção de dados
 

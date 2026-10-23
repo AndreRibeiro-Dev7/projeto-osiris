@@ -16,8 +16,18 @@ if (-not $CredentialFile) {
     $CredentialFile = Join-Path $BackupDirectory ".database-url.xml"
 }
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    throw "Docker não foi encontrado. Abra o Docker Desktop e tente novamente."
+$dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+$docker = if ($dockerCommand) {
+    $dockerCommand.Source
+}
+else {
+    @(
+        (Join-Path $env:LOCALAPPDATA "Programs\DockerDesktop\resources\bin\docker.exe"),
+        (Join-Path $env:ProgramFiles "Docker\Docker\resources\bin\docker.exe")
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+if (-not $docker) {
+    throw "Docker nao foi encontrado. Abra o Docker Desktop e tente novamente."
 }
 
 $backupRoot = New-Item -ItemType Directory -Path $BackupDirectory -Force
@@ -30,7 +40,7 @@ else {
     $databaseUrl = Read-Host "Cole a External Database URL completa" -AsSecureString
 }
 if ($databaseUrl -isnot [System.Security.SecureString]) {
-    throw "O arquivo de credencial não contém uma URL protegida válida."
+    throw "O arquivo de credencial nao contem uma URL protegida valida."
 }
 
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
@@ -40,12 +50,12 @@ $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($databaseUrl)
 
 try {
     $plainDatabaseUrl = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-    docker run --rm `
+    & $docker run --rm `
         -v "${backupRoot}:/backups" `
         postgres:16-alpine `
         pg_dump "$plainDatabaseUrl" --format=custom --no-owner --no-acl --file="/backups/$backupName"
     if ($LASTEXITCODE -ne 0) {
-        throw "pg_dump terminou com código $LASTEXITCODE."
+        throw "pg_dump terminou com codigo $LASTEXITCODE."
     }
 }
 finally {
@@ -59,13 +69,13 @@ if ($backup.Length -le 0) {
     throw "O backup foi criado vazio e removido."
 }
 
-docker run --rm `
+& $docker run --rm `
     -v "${backupRoot}:/backups" `
     postgres:16-alpine `
     pg_restore --list "/backups/$backupName" | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Remove-Item -LiteralPath $backupPath -Force
-    throw "O arquivo falhou na validação do pg_restore e foi removido."
+    throw "O arquivo falhou na validacao do pg_restore e foi removido."
 }
 
 $hash = Get-FileHash -LiteralPath $backupPath -Algorithm SHA256

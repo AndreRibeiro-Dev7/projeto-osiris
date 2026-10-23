@@ -36,6 +36,26 @@ Get-ChildItem ".\backups\osiris-*.dump" | Sort-Object LastWriteTime -Descending
 O resultado esperado é um arquivo `.dump` com tamanho maior que zero e seu arquivo
 `.sha256` correspondente. O próprio script já valida o conteúdo com `pg_restore`.
 
+## Teste seguro de restauração
+
+O teste usa o backup mais recente, cria um PostgreSQL temporário sem porta pública,
+restaura os dados, confere as tabelas essenciais e exibe a quantidade de registros.
+O contêiner e o banco temporário são removidos ao final, inclusive se ocorrer erro.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\scripts\test_backup_restore.ps1"
+```
+
+Para testar um arquivo específico:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\scripts\test_backup_restore.ps1" `
+    -BackupFile ".\backups\osiris-2026-09-22_23-00.dump"
+```
+
+Esse processo é completamente local: ele não utiliza a URL nem as credenciais do
+banco de produção.
+
 ## Recuperação
 
 Em perda de dados recente, prefira **Render → osiris-db → Recovery → Point-in-Time
