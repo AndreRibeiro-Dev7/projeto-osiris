@@ -5,11 +5,14 @@ on:
     - cron: "7,37 * * * *"
   workflow_dispatch:
     inputs:
-      simulate_failure:
-        description: "Simular falha para validar abertura e recuperacao do alerta"
+      run_mode:
+        description: "Escolha o tipo de verificacao"
         required: true
-        default: false
-        type: boolean
+        default: health-check
+        type: choice
+        options:
+          - health-check
+          - simulate-failure
 
 concurrency:
   group: production-uptime-monitor
@@ -22,7 +25,7 @@ permissions:
 env:
   BASE_URL: https://osiris-api-5ujk.onrender.com
   INCIDENT_TITLE: "[Monitoramento] Osiris indisponivel"
-  SIMULATE_FAILURE: ${{ inputs.simulate_failure || 'false' }}
+  MONITOR_MODE: ${{ inputs.run_mode || 'health-check' }}
 
 jobs:
   health-check:
@@ -72,7 +75,8 @@ jobs:
 
           api_ok=false
           database_ok=false
-          if [ "$SIMULATE_FAILURE" = "true" ]; then
+          echo "Modo da execucao: $MONITOR_MODE" | tee -a "$report"
+          if [ "$MONITOR_MODE" = "simulate-failure" ]; then
             echo "Falha controlada solicitada manualmente; a producao nao foi interrompida." >> "$report"
           else
             check_endpoint "API" "$BASE_URL/api/v1/health" && api_ok=true
