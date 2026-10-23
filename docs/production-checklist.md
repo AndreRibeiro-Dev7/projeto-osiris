@@ -42,7 +42,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 
 ## 5. Observabilidade
 
-- [ ] Centralizar logs sem registrar senhas, tokens ou dados sensíveis.
+- [x] Centralizar logs sem registrar senhas, tokens ou dados sensíveis.
 - [x] Configurar monitor automático da API, banco e alerta ao proprietário.
 - [x] Validar as primeiras execuções agendadas e saudáveis em produção.
 - [x] Validar abertura e recuperação do alerta com uma falha controlada.
