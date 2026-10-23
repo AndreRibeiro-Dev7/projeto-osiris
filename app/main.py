@@ -2,6 +2,8 @@
 
 import logging
 from collections.abc import Awaitable, Callable
+from time import perf_counter
+from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -9,16 +11,22 @@ from starlette.responses import Response
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 from app.database.session import async_session_factory
 from app.services.audit import record_activity
 
 logger = logging.getLogger(__name__)
+request_logger = logging.getLogger("app.http")
 
 
 def create_app() -> FastAPI:
     """Create and configure the HTTP application."""
     settings = get_settings()
     production = settings.environment.lower() == "production"
+    configure_logging(
+        level=settings.log_level,
+        json_logs=production or settings.log_json,
+    )
     application = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
@@ -64,6 +72,58 @@ def create_app() -> FastAPI:
         )
         if production:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+    @application.middleware("http")
+    async def log_request(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Log safe request metadata without bodies, query strings, tokens, or IPs."""
+
+        def route_template() -> str:
+            route = getattr(request.scope.get("route"), "path", "<unmatched>")
+            if (
+                route != "<unmatched>"
+                and request.url.path.startswith(f"{settings.api_v1_prefix}/")
+                and not route.startswith(settings.api_v1_prefix)
+            ):
+                return f"{settings.api_v1_prefix}{route}"
+            return route
+
+        request_id = uuid4().hex
+        request.state.request_id = request_id
+        started_at = perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = round((perf_counter() - started_at) * 1000, 2)
+            request_logger.exception(
+                "request.failed",
+                extra={
+                    "event": "request.failed",
+                    "request_id": request_id,
+                    "method": request.method,
+                    "route": route_template(),
+                    "status_code": 500,
+                    "duration_ms": duration_ms,
+                },
+            )
+            raise
+
+        duration_ms = round((perf_counter() - started_at) * 1000, 2)
+        request_logger.log(
+            logging.WARNING if response.status_code >= 500 else logging.INFO,
+            "request.completed",
+            extra={
+                "event": "request.completed",
+                "request_id": request_id,
+                "method": request.method,
+                "route": route_template(),
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+        response.headers["X-Request-ID"] = request_id
         return response
 
     application.include_router(api_v1_router, prefix=settings.api_v1_prefix)

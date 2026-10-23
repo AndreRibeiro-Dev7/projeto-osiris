@@ -1,5 +1,8 @@
 """Tests for environment-driven application settings."""
 
+import pytest
+from pydantic import ValidationError
+
 from app.core.config import Settings
 
 
@@ -29,3 +32,14 @@ def test_explicit_async_driver_is_preserved() -> None:
     settings = Settings(database_url=url)
 
     assert settings.database_url == url
+
+
+def test_log_level_is_normalized() -> None:
+    settings = Settings(log_level="warning")
+
+    assert settings.log_level == "WARNING"
+
+
+def test_invalid_log_level_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="LOG_LEVEL"):
+        Settings(log_level="verbose")

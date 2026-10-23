@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: str = "development"
     debug: bool = True
+    log_level: str = "INFO"
+    log_json: bool = False
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+asyncpg://osiris:osiris@localhost:5432/osiris"
     database_echo: bool = False
@@ -39,6 +41,16 @@ class Settings(BaseSettings):
             if value.startswith("postgresql://"):
                 return value.replace("postgresql://", "postgresql+asyncpg://", 1)
         return value
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def normalize_log_level(cls, value: object) -> object:
+        """Accept only standard Python logging levels."""
+        if isinstance(value, str):
+            normalized = value.upper()
+            if normalized in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+                return normalized
+        raise ValueError("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL.")
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
