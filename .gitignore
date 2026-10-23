@@ -35,4 +35,4 @@ postgres_data/
 # Local recovery and repair artifacts
 work/
 backups/
-backups/
+scripts/configure_local_backup.ps1

@@ -19,7 +19,8 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [ ] Usar PostgreSQL gerenciado, sem acesso público desnecessário.
 - [ ] Separar as configurações de desenvolvimento, homologação e produção.
 - [ ] Armazenar segredos no serviço de hospedagem, nunca no repositório.
-- [ ] Configurar backup automático e testar uma restauração completa.
+- [x] Confirmar backup contínuo e recuperação ponto a ponto do Render Postgres pago.
+- [ ] Testar uma restauração completa em banco vazio e isolado.
 
 ## 3. Segurança e proteção de dados
 

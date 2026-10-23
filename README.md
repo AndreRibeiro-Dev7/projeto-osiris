@@ -58,6 +58,7 @@ implementação está coberta por **66 testes automatizados**.
 - Bloqueio de 15 minutos, com contagem regressiva, após cinco tentativas de login inválido.
 - Encerramento imediato de todas as sessões mediante confirmação da senha atual.
 - Aviso regressivo nos cinco minutos finais e saída automática ao expirar a sessão.
+- Backup contínuo do Render Postgres e cópia lógica local validada com retenção de 30 dias.
 - Configurações da empresa e da conta atualizadas pelo painel.
 - Documentação interativa com OpenAPI/Swagger.
 
@@ -195,7 +196,7 @@ O produto funcional está pronto. As próximas etapas são voltadas à publicaç
 e à operação comercial:
 
 - Implantar aplicação e banco gerenciado com domínio próprio e HTTPS.
-- Configurar backups automáticos e testar a restauração do banco.
+- Executar periodicamente um teste de restauração em banco isolado.
 - Adicionar logs centralizados, monitoramento e alertas de indisponibilidade.
 - Concluir a integração oficial com WhatsApp e calendário.
 - Usar domínio verificado para melhorar a entrega dos e-mails transacionais.
@@ -207,6 +208,8 @@ O roteiro detalhado está em
 [Checklist para produção](./docs/production-checklist.md).
 As instruções técnicas estão no
 [Guia de publicação](./docs/deployment.md).
+O procedimento de proteção dos dados está no
+[Guia de backup e recuperação](./docs/backups.md).
 O repositório também inclui um `render.yaml` para a primeira homologação online.
 
 ## Autor
