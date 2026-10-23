@@ -40,3 +40,19 @@ notificações de ocorrências atribuídas à sua conta nas configurações do G
 Os agendamentos do GitHub Actions podem sofrer alguns minutos de atraso em
 períodos de alta demanda. O monitor é uma camada adicional aos health checks e
 reinícios automáticos já executados pelo Render.
+
+## Validação em produção
+
+Em 23 de outubro de 2026, as três primeiras execuções agendadas foram concluídas
+com sucesso. Cada execução confirmou a disponibilidade da API e a conexão com o
+banco em aproximadamente 40 a 50 segundos.
+
+Permanece pendente um teste controlado do ciclo de incidente: simular uma falha,
+confirmar a abertura da ocorrência e depois validar o encerramento automático na
+execução saudável seguinte. Esse teste não deve interromper a API de produção.
+
+O acionamento manual oferece a opção `simulate_failure`. Quando marcada, ela não
+consulta nem interrompe a produção: apenas percorre o mesmo fluxo de falha usado
+pelo monitor, cria a ocorrência e deixa a execução vermelha de forma intencional.
+Uma nova execução manual com a opção desmarcada valida API e banco e encerra a
+ocorrência automaticamente.

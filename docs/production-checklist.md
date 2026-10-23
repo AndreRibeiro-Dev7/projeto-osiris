@@ -44,7 +44,8 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 
 - [ ] Centralizar logs sem registrar senhas, tokens ou dados sensíveis.
 - [x] Configurar monitor automático da API, banco e alerta ao proprietário.
-- [ ] Validar a primeira execução e o ciclo de abertura e recuperação do alerta.
+- [x] Validar as primeiras execuções agendadas e saudáveis em produção.
+- [ ] Validar abertura e recuperação do alerta com uma falha controlada.
 - [ ] Monitorar disponibilidade, latência, erros e conexões com o banco.
 - [ ] Criar alertas para falhas de login, e-mail, IA e integrações.
 - [ ] Registrar métricas de agendamento e tarefas financeiras críticas.
