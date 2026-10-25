@@ -9,6 +9,11 @@ São verificados:
 - `/api/v1/health`, que confirma a disponibilidade da API;
 - `/api/v1/health/database`, que confirma a conexão real com o PostgreSQL.
 
+O relatório de cada execução registra o código HTTP e o tempo total de resposta
+dos dois endpoints. Uma resposta acima de 90 segundos é tratada como falha para
+detectar degradação antes que a plataforma fique totalmente indisponível. O
+resumo fica visível na própria execução do GitHub Actions.
+
 Cada endereço aceita até 120 segundos por tentativa e possui uma nova tentativa
 para tolerar a inicialização lenta de uma instância suspensa.
 
@@ -20,6 +25,10 @@ Quando qualquer verificação falha, o workflow:
 2. abre uma única ocorrência chamada `[Monitoramento] Osiris indisponivel`;
 3. atribui a ocorrência ao proprietário do repositório;
 4. mantém a execução marcada como falha.
+
+Erros de rede, respostas diferentes de HTTP 200, JSON inválido, estado diferente
+de `ok`, lentidão acima do limite e falhas de conexão com o banco percorrem o
+mesmo fluxo de incidente.
 
 Não são criadas ocorrências duplicadas enquanto a primeira estiver aberta. Na
 primeira verificação saudável, o monitor comenta a recuperação e encerra a

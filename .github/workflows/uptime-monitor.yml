@@ -25,6 +25,7 @@ permissions:
 env:
   BASE_URL: https://osiris-api-5ujk.onrender.com
   INCIDENT_TITLE: "[Monitoramento] Osiris indisponivel"
+  MAX_RESPONSE_TIME_SECONDS: "90"
   MONITOR_MODE: ${{ inputs.run_mode || 'health-check' }}
 
 jobs:
@@ -53,23 +54,37 @@ jobs:
               --retry 1 \
               --retry-delay 15 \
               --retry-all-errors \
-              --write-out $'\n%{http_code}' \
+              --write-out $'\n%{http_code}\n%{time_total}' \
               "$url" 2>&1)"
             curl_status=$?
-            http_status="$(printf '%s\n' "$response" | tail -n 1)"
-            body="$(printf '%s\n' "$response" | sed '$d')"
+            http_status="$(printf '%s\n' "$response" | tail -n 2 | head -n 1)"
+            elapsed_seconds="$(printf '%s\n' "$response" | tail -n 1)"
+            body="$(printf '%s\n' "$response" | sed '$d' | sed '$d')"
 
             printf '%s' "$body" | python -c \
               'import json, sys; data = json.load(sys.stdin); raise SystemExit(0 if data.get("status") == "ok" else 1)' \
               >/dev/null 2>&1
             body_status=$?
 
-            if [ "$curl_status" -eq 0 ] && [ "$http_status" = "200" ] && [ "$body_status" -eq 0 ]; then
-              echo "$label: saudavel (HTTP $http_status)" >> "$report"
+            python - "$elapsed_seconds" "$MAX_RESPONSE_TIME_SECONDS" <<'PY'
+          import sys
+
+          try:
+              elapsed = float(sys.argv[1])
+              limit = float(sys.argv[2])
+          except ValueError:
+              raise SystemExit(1)
+          raise SystemExit(0 if elapsed <= limit else 1)
+          PY
+            latency_status=$?
+
+            if [ "$curl_status" -eq 0 ] && [ "$http_status" = "200" ] && \
+              [ "$body_status" -eq 0 ] && [ "$latency_status" -eq 0 ]; then
+              echo "$label: saudavel (HTTP $http_status, ${elapsed_seconds}s)" >> "$report"
               return 0
             fi
 
-            echo "$label: falha (curl=$curl_status, HTTP=$http_status, resposta=${body:0:300})" >> "$report"
+            echo "$label: falha (curl=$curl_status, HTTP=$http_status, tempo=${elapsed_seconds}s, limite=${MAX_RESPONSE_TIME_SECONDS}s, resposta=${body:0:300})" >> "$report"
             return 1
           }
 
@@ -94,6 +109,14 @@ jobs:
             cat "$report"
             echo "OSIRIS_REPORT"
           } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Monitoramento de producao"
+            echo
+            echo '```text'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open incident on failure
         if: steps.health.outputs.healthy != 'true'
