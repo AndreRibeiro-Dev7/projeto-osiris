@@ -72,10 +72,13 @@ exigem atenção do proprietário:
 - indisponibilidade ou erro do provedor de IA;
 - falhas HTTP 5xx em rotas de integrações e webhooks.
 
-Defina `OPERATIONAL_ALERT_WEBHOOK_URL` no Render para encaminhar esses eventos a
-um webhook HTTPS. O corpo contém somente categoria, evento, gravidade, rota,
-código HTTP, ambiente e identificador técnico da requisição. E-mails, senhas,
-tokens, endereços IP e conteúdo enviado pelo cliente nunca são incluídos.
+Crie um webhook em um canal privado do Discord e defina a URL secreta como
+`DISCORD_ALERT_WEBHOOK_URL` no Render. A API aceita somente URLs HTTPS oficiais
+do Discord e envia um cartão com categoria, evento, gravidade, rota, código
+HTTP, ambiente e identificador técnico da requisição. E-mails, senhas, tokens,
+endereços IP e conteúdo enviado pelo cliente nunca são incluídos. Não publique
+nem registre a URL do webhook no repositório: ela concede permissão para enviar
+mensagens ao canal.
 
 Alertas iguais são agrupados por cinco minutos por padrão para evitar excesso de
 notificações. Ajuste `OPERATIONAL_ALERT_COOLDOWN_SECONDS` se necessário. Uma

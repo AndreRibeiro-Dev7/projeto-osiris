@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,7 +31,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = "Osiris <onboarding@resend.dev>"
     email_delivery_enabled: bool = False
-    operational_alert_webhook_url: str = ""
+    discord_alert_webhook_url: str = ""
     operational_alert_cooldown_seconds: int = 300
     operational_alert_timeout_seconds: float = 5.0
 
@@ -55,12 +56,20 @@ class Settings(BaseSettings):
                 return normalized
         raise ValueError("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL.")
 
-    @field_validator("operational_alert_webhook_url")
+    @field_validator("discord_alert_webhook_url")
     @classmethod
-    def validate_alert_webhook_url(cls, value: str) -> str:
-        """Transmit operational metadata only through an encrypted webhook."""
-        if value and not value.startswith("https://"):
-            raise ValueError("OPERATIONAL_ALERT_WEBHOOK_URL must use HTTPS.")
+    def validate_discord_alert_webhook_url(cls, value: str) -> str:
+        """Accept only official encrypted Discord webhook endpoints."""
+        if not value:
+            return value
+        parsed = urlparse(value)
+        allowed_hosts = {"discord.com", "www.discord.com", "discordapp.com"}
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname not in allowed_hosts
+            or not parsed.path.startswith("/api/webhooks/")
+        ):
+            raise ValueError("DISCORD_ALERT_WEBHOOK_URL must be an official Discord webhook URL.")
         return value
 
     @field_validator("operational_alert_cooldown_seconds")

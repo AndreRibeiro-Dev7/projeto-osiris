@@ -46,8 +46,18 @@ def test_invalid_log_level_is_rejected() -> None:
 
 
 def test_operational_alert_limits_are_validated() -> None:
-    with pytest.raises(ValidationError, match="OPERATIONAL_ALERT_WEBHOOK_URL"):
-        Settings(operational_alert_webhook_url="http://alerts.example.test/osiris")
+    with pytest.raises(ValidationError, match="DISCORD_ALERT_WEBHOOK_URL"):
+        Settings(discord_alert_webhook_url="http://discord.com/api/webhooks/123/token")
+
+    with pytest.raises(ValidationError, match="DISCORD_ALERT_WEBHOOK_URL"):
+        Settings(discord_alert_webhook_url="https://alerts.example.test/api/webhooks/123/token")
+
+    assert (
+        Settings(
+            discord_alert_webhook_url="https://discord.com/api/webhooks/123/token"
+        ).discord_alert_webhook_url
+        == "https://discord.com/api/webhooks/123/token"
+    )
 
     with pytest.raises(ValidationError, match="OPERATIONAL_ALERT_COOLDOWN_SECONDS"):
         Settings(operational_alert_cooldown_seconds=-1)

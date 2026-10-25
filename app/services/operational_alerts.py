@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from threading import Lock
 from time import monotonic
 from typing import Literal
@@ -90,7 +90,7 @@ async def dispatch_operational_alert(
     )
     logger.error(alert_summary, extra=log_fields)
 
-    if not current_settings.operational_alert_webhook_url:
+    if not current_settings.discord_alert_webhook_url:
         return False
 
     delivery_key = f"{alert.category}:{alert.event}"
@@ -101,18 +101,43 @@ async def dispatch_operational_alert(
         )
         return False
 
+    severity_color = {
+        "warning": 0xF59E0B,
+        "error": 0xEF4444,
+        "critical": 0x991B1B,
+    }
+    fields = [
+        {"name": "Categoria", "value": alert.category.upper(), "inline": True},
+        {"name": "Evento", "value": alert.event, "inline": True},
+        {"name": "Ambiente", "value": current_settings.environment, "inline": True},
+    ]
+    if alert.status_code is not None:
+        fields.append({"name": "HTTP", "value": str(alert.status_code), "inline": True})
+    if alert.route:
+        fields.append({"name": "Rota", "value": f"`{alert.route}`", "inline": False})
+
     payload = {
-        "source": "projeto-osiris",
-        "environment": current_settings.environment,
-        **asdict(alert),
-        "request_id": request_id,
+        "username": "Osiris Monitor",
+        "allowed_mentions": {"parse": []},
+        "embeds": [
+            {
+                "title": "Alerta operacional do Osiris",
+                "description": (
+                    "Uma falha que requer atenção foi detectada. "
+                    "Consulte os logs da API usando o identificador abaixo."
+                ),
+                "color": severity_color[alert.severity],
+                "fields": fields,
+                "footer": {"text": f"Request ID: {request_id or 'não disponível'}"},
+            }
+        ],
     }
     try:
         async with httpx.AsyncClient(
             timeout=current_settings.operational_alert_timeout_seconds
         ) as client:
             response = await client.post(
-                current_settings.operational_alert_webhook_url,
+                current_settings.discord_alert_webhook_url,
                 json=payload,
             )
             response.raise_for_status()

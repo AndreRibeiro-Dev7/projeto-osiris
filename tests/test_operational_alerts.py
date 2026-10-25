@@ -76,14 +76,14 @@ def test_dispatches_privacy_safe_payload_once_during_cooldown(
             return None
 
         async def post(self, url: str, *, json: dict[str, Any]) -> FakeResponse:
-            assert url == "https://alerts.example.test/osiris"
+            assert url == "https://discord.com/api/webhooks/123/secret-token"
             posted_payloads.append(json)
             return FakeResponse()
 
     monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
     reset_operational_alert_cooldowns()
     settings = Settings(
-        operational_alert_webhook_url="https://alerts.example.test/osiris",
+        discord_alert_webhook_url="https://discord.com/api/webhooks/123/secret-token",
         operational_alert_cooldown_seconds=300,
         operational_alert_timeout_seconds=2,
     )
@@ -106,14 +106,30 @@ def test_dispatches_privacy_safe_payload_once_during_cooldown(
     assert second_delivery is False
     assert posted_payloads == [
         {
-            "source": "projeto-osiris",
-            "environment": "development",
-            "category": "ai",
-            "event": "ai_provider_failed",
-            "severity": "error",
-            "status_code": 502,
-            "route": "/api/v1/businesses/{business_id}/assistant/messages",
-            "request_id": "request-123",
+            "username": "Osiris Monitor",
+            "allowed_mentions": {"parse": []},
+            "embeds": [
+                {
+                    "title": "Alerta operacional do Osiris",
+                    "description": (
+                        "Uma falha que requer atenção foi detectada. "
+                        "Consulte os logs da API usando o identificador abaixo."
+                    ),
+                    "color": 0xEF4444,
+                    "fields": [
+                        {"name": "Categoria", "value": "AI", "inline": True},
+                        {"name": "Evento", "value": "ai_provider_failed", "inline": True},
+                        {"name": "Ambiente", "value": "development", "inline": True},
+                        {"name": "HTTP", "value": "502", "inline": True},
+                        {
+                            "name": "Rota",
+                            "value": "`/api/v1/businesses/{business_id}/assistant/messages`",
+                            "inline": False,
+                        },
+                    ],
+                    "footer": {"text": "Request ID: request-123"},
+                }
+            ],
         }
     ]
     rendered_payload = str(posted_payloads[0]).lower()
@@ -145,7 +161,7 @@ def test_webhook_failure_is_non_fatal_and_can_be_retried(
     monkeypatch.setattr(httpx, "AsyncClient", FailingAsyncClient)
     reset_operational_alert_cooldowns()
     settings = Settings(
-        operational_alert_webhook_url="https://alerts.example.test/osiris",
+        discord_alert_webhook_url="https://discord.com/api/webhooks/123/secret-token",
     )
     alert = OperationalAlert("integration", "calendar_failed", "error", 503, "/webhooks")
 
