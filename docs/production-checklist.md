@@ -46,7 +46,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [x] Configurar monitor automático da API, banco e alerta ao proprietário.
 - [x] Validar as primeiras execuções agendadas e saudáveis em produção.
 - [x] Validar abertura e recuperação do alerta com uma falha controlada.
-- [ ] Monitorar disponibilidade, latência, erros e conexões com o banco.
+- [x] Monitorar disponibilidade, latência, erros e conexões com o banco.
 - [ ] Criar alertas para falhas de login, e-mail, IA e integrações.
 - [ ] Registrar métricas de agendamento e tarefas financeiras críticas.
 - [ ] Documentar procedimento de incidente e canais de suporte.
