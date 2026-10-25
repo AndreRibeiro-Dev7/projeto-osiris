@@ -62,3 +62,15 @@ async def require_business_access(
             detail="Owner access is required for this business.",
         )
     return current_user
+
+
+async def require_primary_owner(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Allow security-sensitive operations only for the account that created the business."""
+    if current_user.role != "owner" or not current_user.is_primary_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Primary owner access is required.",
+        )
+    return current_user

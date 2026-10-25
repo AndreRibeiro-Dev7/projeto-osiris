@@ -61,6 +61,12 @@ def test_audit_history_route_is_exposed() -> None:
     assert "get" in paths["/api/v1/businesses/{business_id}/audit-logs"]
 
 
+def test_operational_alert_test_route_is_exposed() -> None:
+    paths = app.openapi()["paths"]
+
+    assert "post" in paths["/api/v1/operational-alerts/test"]
+
+
 def test_password_recovery_routes_are_exposed() -> None:
     paths = app.openapi()["paths"]
 

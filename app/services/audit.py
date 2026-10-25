@@ -9,6 +9,8 @@ from app.models.user import User
 def describe_activity(method: str, path: str) -> tuple[str, str]:
     """Translate one successful API mutation into a safe user-facing description."""
     method = method.upper()
+    if path.endswith("/operational-alerts/test"):
+        return "Configurações", "Enviou um alerta de teste ao Discord"
     if "/owner-accounts" in path:
         descriptions = {
             "POST": "Criou uma conta de coproprietário",

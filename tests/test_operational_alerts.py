@@ -168,3 +168,54 @@ def test_webhook_failure_is_non_fatal_and_can_be_retried(
     assert asyncio.run(dispatch_operational_alert(alert, settings=settings)) is False
     assert asyncio.run(dispatch_operational_alert(alert, settings=settings)) is False
     assert attempts == 2
+
+
+def test_delivery_test_uses_safe_copy_and_bypasses_cooldown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    posted_payloads: list[dict[str, Any]] = []
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+    class FakeAsyncClient:
+        def __init__(self, *, timeout: float) -> None:
+            pass
+
+        async def __aenter__(self) -> "FakeAsyncClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def post(self, url: str, *, json: dict[str, Any]) -> FakeResponse:
+            posted_payloads.append(json)
+            return FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeAsyncClient)
+    reset_operational_alert_cooldowns()
+    settings = Settings(
+        discord_alert_webhook_url="https://discord.com/api/webhooks/123/secret-token",
+        operational_alert_cooldown_seconds=300,
+    )
+    alert = OperationalAlert(
+        "integration",
+        "delivery_test",
+        "info",
+        200,
+        "/api/v1/operational-alerts/test",
+    )
+
+    first = asyncio.run(dispatch_operational_alert(alert, settings=settings, deduplicate=False))
+    second = asyncio.run(dispatch_operational_alert(alert, settings=settings, deduplicate=False))
+
+    assert first is True
+    assert second is True
+    assert len(posted_payloads) == 2
+    embed = posted_payloads[0]["embeds"][0]
+    assert embed["title"] == "Teste de alertas do Osiris"
+    assert embed["description"] == (
+        "O canal do Discord está configurado corretamente. " "Nenhuma falha real foi detectada."
+    )
+    assert embed["color"] == 0x3B82F6

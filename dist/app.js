@@ -165,7 +165,7 @@ async function boot() {
     [state.business, state.barbers, state.barberAccounts, state.ownerAccounts, state.customers, state.customerPortfolio, state.services] = await Promise.all([
       request(`/businesses/${state.me.business_id}`), request(`/businesses/${state.me.business_id}/barbers`), request("/auth/barber-accounts"), request("/auth/owner-accounts"), request(`/businesses/${state.me.business_id}/customers`), request(`/businesses/${state.me.business_id}/customers/portfolio`), request(`/businesses/${state.me.business_id}/services`)
     ]);
-    document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("open-account-security").hidden = false; $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; document.querySelector("#agenda-panel .title-row h1").textContent = "Agenda"; document.querySelector("#agenda-panel .title-row .muted").textContent = "Organize os atendimentos por profissional e data.";
+    document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("open-account-security").hidden = false; $("operational-alert-settings").hidden = !state.me.is_primary_owner; $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; document.querySelector("#agenda-panel .title-row h1").textContent = "Agenda"; document.querySelector("#agenda-panel .title-row .muted").textContent = "Organize os atendimentos por profissional e data.";
     $("loading-view").hidden = true; $("app-view").hidden = false; window.scrollTo(0, 0); $("user-email").textContent = state.me.email; $("business-name").textContent = state.business.name;
     $("business-settings-name").value = state.business.name; $("business-settings-phone").value = state.business.phone; $("business-settings-timezone").value = state.business.timezone; $("loyalty-enabled").checked = state.business.loyalty_enabled; $("loyalty-target").value = state.business.loyalty_target; $("loyalty-reward").value = state.business.loyalty_reward; $("revenue-goal-input").value = (state.business.monthly_revenue_goal_cents / 100).toFixed(2); $("current-email").value = state.me.email; $("save-email-label").textContent = "Enviar código";
     const publicLink = `${location.origin}/dashboard/booking/?business_id=${state.me.business_id}`; $("public-booking-link").value = publicLink; $("open-booking-link").href = publicLink;
@@ -183,6 +183,7 @@ async function bootBarber() {
   $("user-email").textContent = state.me.email; $("business-name").textContent = `${profile.business_name} · ${profile.full_name}`;
   document.body.classList.add("barber-session");
   $("open-account-security").hidden = true;
+  $("operational-alert-settings").hidden = true;
   document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = button.dataset.view !== "agenda"; button.classList.toggle("active", button.dataset.view === "agenda"); });
   document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "agenda-panel"; });
   $("barber-filter").innerHTML = `<option value="${profile.barber_id}">${escapeHtml(profile.full_name)}</option>`; $("barber-filter").disabled = true;
@@ -1039,7 +1040,7 @@ function sendWhatsAppReminder(id) {
   const greetingName = customerName.split(" ")[0]; const confirmationLink = `${location.origin}/dashboard/booking/?booking_token=${appointment.public_token}`; const message = `Olá, ${greetingName}! Lembramos que você tem ${serviceName} agendado na ${state.business.name}, ${formatAppointmentDate(appointment.starts_at)}, às ${formatTime(appointment.starts_at)}. Confirme sua presença ou cancele pelo link: ${confirmationLink}`;
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
 }
-function logout() { sessionStorage.removeItem("osiris_token"); state.token = null; state.me = null; state.sessionExpiresAt = null; $("session-expiry-warning").hidden = true; document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; $("loading-view").hidden = true; $("app-view").hidden = true; $("login-view").hidden = false; window.scrollTo(0, 0); }
+function logout() { sessionStorage.removeItem("osiris_token"); state.token = null; state.me = null; state.sessionExpiresAt = null; $("session-expiry-warning").hidden = true; document.body.classList.remove("barber-session"); document.querySelectorAll(".nav-item").forEach((button) => { button.hidden = false; button.classList.toggle("active", button.dataset.view === "inicio"); }); document.querySelectorAll(".panel-view").forEach((panel) => { panel.hidden = panel.id !== "inicio-panel"; }); $("operational-alert-settings").hidden = true; $("barber-filter").disabled = false; $("new-appointment").hidden = false; $("save-appointment-notes").hidden = false; $("loading-view").hidden = true; $("app-view").hidden = true; $("login-view").hidden = false; window.scrollTo(0, 0); }
 
 function renderOwnerAccounts() {
   if (!$("owner-account-list")) return;
@@ -1200,6 +1201,30 @@ async function saveLoyaltySettings(event) {
   finally { $("save-loyalty").disabled = false; $("save-loyalty-label").textContent = "Salvar fidelidade"; }
 }
 
+async function sendOperationalAlertTest() {
+  if (!state.me?.is_primary_owner) return;
+  $("operational-alert-test-error").textContent = "";
+  const approved = await confirmAction({
+    eyebrow: "MONITORAMENTO",
+    title: "Enviar alerta de teste?",
+    message: "Uma mensagem de teste será enviada ao canal configurado no Discord.",
+    detail: "Nenhuma falha real será criada e nenhuma conta será bloqueada.",
+    confirmLabel: "Enviar teste",
+  });
+  if (!approved) return;
+  $("test-operational-alert").disabled = true;
+  $("test-operational-alert-label").textContent = "Enviando...";
+  try {
+    await request("/operational-alerts/test", { method: "POST" });
+    showToast("Alerta de teste enviado ao Discord.");
+  } catch (error) {
+    $("operational-alert-test-error").textContent = error.message;
+  } finally {
+    $("test-operational-alert").disabled = false;
+    $("test-operational-alert-label").textContent = "Enviar alerta de teste";
+  }
+}
+
 async function changeOwnerPassword(event) {
   event.preventDefault(); const currentPassword = $("current-password").value; const newPassword = $("new-password").value; const confirmation = $("confirm-password").value;
   $("password-error").textContent = "";
@@ -1312,6 +1337,7 @@ document.addEventListener("keydown", (event) => { if (event.key === "Escape" && 
 $("copy-booking-link").addEventListener("click", async () => { try { await navigator.clipboard.writeText($("public-booking-link").value); showToast("Link copiado. Agora é só compartilhar!"); } catch { $("public-booking-link").select(); document.execCommand("copy"); showToast("Link copiado."); } });
 $("business-form").addEventListener("submit", saveBusinessSettings);
 $("loyalty-form").addEventListener("submit", saveLoyaltySettings);
+$("test-operational-alert").addEventListener("click", sendOperationalAlertTest);
 $("revenue-goal-form").addEventListener("submit", saveRevenueGoal);
 $("refresh-goal-history").addEventListener("click", loadRevenueGoalHistory);
 $("goal-month-cards").addEventListener("click", async (event) => { const card = event.target.closest("[data-goal-month]"); if (!card) return; document.querySelectorAll("[data-goal-month]").forEach((item) => item.classList.toggle("selected", item === card)); const [year, month] = card.dataset.goalMonth.split("-").map(Number), lastDay = new Date(year, month, 0).getDate(); $("chart-date-from").value = `${card.dataset.goalMonth}-01`; $("chart-date-to").value = `${card.dataset.goalMonth}-${String(lastDay).padStart(2, "0")}`; $("chart-period").value = "day"; state.financialChartPeriod = "day"; $("financial-chart-subtitle").textContent = "Receitas, despesas e resultado líquido por dia"; const report = await loadFinancialChartPeriod(); renderGoalMonthAnalysis(report, card.dataset.goalMonth); $("goal-month-analysis").scrollIntoView({ behavior: "smooth", block: "nearest" }); });

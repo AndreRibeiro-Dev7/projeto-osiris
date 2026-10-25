@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 
-from app.api.dependencies import require_business_access
+from app.api.dependencies import require_business_access, require_primary_owner
 from app.api.v1.routes.auth import require_owner_account
 from app.core.exceptions import InsufficientPermissionError
 from app.services.auth import AuthService
@@ -57,3 +57,25 @@ def test_co_owner_cannot_delete_owner_accounts() -> None:
                 current_password="senha-atual",
             )
         )
+
+
+def test_primary_owner_can_send_operational_alert_test() -> None:
+    owner = SimpleNamespace(role="owner", is_primary_owner=True)
+
+    result = asyncio.run(require_primary_owner(owner))  # type: ignore[arg-type]
+
+    assert result is owner
+
+
+@pytest.mark.parametrize(
+    "account",
+    [
+        SimpleNamespace(role="owner", is_primary_owner=False),
+        SimpleNamespace(role="barber", is_primary_owner=False),
+    ],
+)
+def test_non_primary_accounts_cannot_send_operational_alert_test(account: object) -> None:
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(require_primary_owner(account))  # type: ignore[arg-type]
+
+    assert error.value.status_code == 403

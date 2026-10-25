@@ -13,7 +13,7 @@ import httpx
 from app.core.config import Settings, get_settings
 
 AlertCategory = Literal["login", "email", "ai", "integration"]
-AlertSeverity = Literal["warning", "error", "critical"]
+AlertSeverity = Literal["info", "warning", "error", "critical"]
 
 logger = logging.getLogger("app.operations")
 _delivery_lock = Lock()
@@ -72,6 +72,7 @@ async def dispatch_operational_alert(
     *,
     request_id: str | None = None,
     settings: Settings | None = None,
+    deduplicate: bool = True,
 ) -> bool:
     """Log an alert and optionally deliver a deduplicated webhook notification."""
     current_settings = settings or get_settings()
@@ -88,13 +89,16 @@ async def dispatch_operational_alert(
         f"operational.alert category={alert.category} name={alert.event} "
         f"severity={alert.severity}"
     )
-    logger.error(alert_summary, extra=log_fields)
+    log_method = logger.info if alert.severity == "info" else logger.error
+    log_method(alert_summary, extra=log_fields)
 
     if not current_settings.discord_alert_webhook_url:
         return False
 
     delivery_key = f"{alert.category}:{alert.event}"
-    if not _reserve_delivery(delivery_key, current_settings.operational_alert_cooldown_seconds):
+    if deduplicate and not _reserve_delivery(
+        delivery_key, current_settings.operational_alert_cooldown_seconds
+    ):
         logger.info(
             f"{alert_summary} delivery=suppressed",
             extra={**log_fields, "event": "operational.alert_suppressed"},
@@ -102,6 +106,7 @@ async def dispatch_operational_alert(
         return False
 
     severity_color = {
+        "info": 0x3B82F6,
         "warning": 0xF59E0B,
         "error": 0xEF4444,
         "critical": 0x991B1B,
@@ -116,15 +121,25 @@ async def dispatch_operational_alert(
     if alert.route:
         fields.append({"name": "Rota", "value": f"`{alert.route}`", "inline": False})
 
+    is_delivery_test = alert.event == "delivery_test"
     payload = {
         "username": "Osiris Monitor",
         "allowed_mentions": {"parse": []},
         "embeds": [
             {
-                "title": "Alerta operacional do Osiris",
+                "title": (
+                    "Teste de alertas do Osiris"
+                    if is_delivery_test
+                    else "Alerta operacional do Osiris"
+                ),
                 "description": (
-                    "Uma falha que requer atenção foi detectada. "
-                    "Consulte os logs da API usando o identificador abaixo."
+                    "O canal do Discord está configurado corretamente. "
+                    "Nenhuma falha real foi detectada."
+                    if is_delivery_test
+                    else (
+                        "Uma falha que requer atenção foi detectada. "
+                        "Consulte os logs da API usando o identificador abaixo."
+                    )
                 ),
                 "color": severity_color[alert.severity],
                 "fields": fields,
@@ -142,7 +157,8 @@ async def dispatch_operational_alert(
             )
             response.raise_for_status()
     except httpx.HTTPError:
-        _release_delivery(delivery_key)
+        if deduplicate:
+            _release_delivery(delivery_key)
         logger.exception(
             f"{alert_summary} delivery=failed",
             extra={**log_fields, "event": "operational.alert_delivery_failed"},

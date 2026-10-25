@@ -22,3 +22,10 @@ def test_audit_describes_appointment_completion() -> None:
 
     assert area == "Agenda"
     assert description == "Concluiu um atendimento"
+
+
+def test_audit_describes_operational_alert_test() -> None:
+    area, description = describe_activity("POST", "/api/v1/operational-alerts/test")
+
+    assert area == "Configurações"
+    assert description == "Enviou um alerta de teste ao Discord"
