@@ -43,3 +43,14 @@ def test_log_level_is_normalized() -> None:
 def test_invalid_log_level_is_rejected() -> None:
     with pytest.raises(ValidationError, match="LOG_LEVEL"):
         Settings(log_level="verbose")
+
+
+def test_operational_alert_limits_are_validated() -> None:
+    with pytest.raises(ValidationError, match="OPERATIONAL_ALERT_WEBHOOK_URL"):
+        Settings(operational_alert_webhook_url="http://alerts.example.test/osiris")
+
+    with pytest.raises(ValidationError, match="OPERATIONAL_ALERT_COOLDOWN_SECONDS"):
+        Settings(operational_alert_cooldown_seconds=-1)
+
+    with pytest.raises(ValidationError, match="OPERATIONAL_ALERT_TIMEOUT_SECONDS"):
+        Settings(operational_alert_timeout_seconds=0)

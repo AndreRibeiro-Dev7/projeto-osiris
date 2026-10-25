@@ -14,6 +14,10 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.database.session import async_session_factory
 from app.services.audit import record_activity
+from app.services.operational_alerts import (
+    classify_operational_failure,
+    dispatch_operational_alert,
+)
 
 logger = logging.getLogger(__name__)
 request_logger = logging.getLogger("app.http")
@@ -123,6 +127,16 @@ def create_app() -> FastAPI:
                 "duration_ms": duration_ms,
             },
         )
+        operational_alert = classify_operational_failure(
+            route=route_template(),
+            status_code=response.status_code,
+        )
+        if operational_alert is not None:
+            await dispatch_operational_alert(
+                operational_alert,
+                request_id=request_id,
+                settings=settings,
+            )
         response.headers["X-Request-ID"] = request_id
         return response
 

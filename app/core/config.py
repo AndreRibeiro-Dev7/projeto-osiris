@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = "Osiris <onboarding@resend.dev>"
     email_delivery_enabled: bool = False
+    operational_alert_webhook_url: str = ""
+    operational_alert_cooldown_seconds: int = 300
+    operational_alert_timeout_seconds: float = 5.0
 
     @field_validator("database_url", mode="before")
     @classmethod
@@ -51,6 +54,30 @@ class Settings(BaseSettings):
             if normalized in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
                 return normalized
         raise ValueError("LOG_LEVEL must be DEBUG, INFO, WARNING, ERROR, or CRITICAL.")
+
+    @field_validator("operational_alert_webhook_url")
+    @classmethod
+    def validate_alert_webhook_url(cls, value: str) -> str:
+        """Transmit operational metadata only through an encrypted webhook."""
+        if value and not value.startswith("https://"):
+            raise ValueError("OPERATIONAL_ALERT_WEBHOOK_URL must use HTTPS.")
+        return value
+
+    @field_validator("operational_alert_cooldown_seconds")
+    @classmethod
+    def validate_alert_cooldown(cls, value: int) -> int:
+        """Allow disabling deduplication while rejecting negative cooldowns."""
+        if value < 0:
+            raise ValueError("OPERATIONAL_ALERT_COOLDOWN_SECONDS cannot be negative.")
+        return value
+
+    @field_validator("operational_alert_timeout_seconds")
+    @classmethod
+    def validate_alert_timeout(cls, value: float) -> float:
+        """Keep webhook failures from delaying API responses for too long."""
+        if not 0 < value <= 30:
+            raise ValueError("OPERATIONAL_ALERT_TIMEOUT_SECONDS must be between 0 and 30.")
+        return value
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",

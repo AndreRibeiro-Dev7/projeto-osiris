@@ -22,7 +22,9 @@ def test_health_check_returns_application_status() -> None:
 
 def test_assistant_returns_service_unavailable_without_api_key(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
+    caplog.set_level("ERROR", logger="app.operations")
     app.dependency_overrides[require_business_access] = lambda: None
     monkeypatch.setattr(
         "app.api.v1.routes.businesses.get_settings",
@@ -44,3 +46,9 @@ def test_assistant_returns_service_unavailable_without_api_key(
 
     assert response.status_code == 503
     assert response.json() == {"detail": "OPENAI_API_KEY is not configured."}
+    alert_record = next(
+        record for record in caplog.records if getattr(record, "event", None) == "operational.alert"
+    )
+    assert alert_record.alert_category == "ai"
+    assert alert_record.alert_event == "ai_provider_failed"
+    assert alert_record.route.endswith("/assistant/messages")

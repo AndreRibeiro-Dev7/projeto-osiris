@@ -62,6 +62,26 @@ produção. A execução manual `#5`, em modo `simulate-failure`, abriu a ocorr�
 validou API e banco, publicou a recuperação e encerrou a ocorrência
 automaticamente.
 
+## Alertas de falhas operacionais
+
+A API também gera o evento estruturado `operational.alert` para falhas que
+exigem atenção do proprietário:
+
+- bloqueio temporário de login após tentativas inválidas repetidas;
+- indisponibilidade no envio de recuperação ou confirmação de e-mail;
+- indisponibilidade ou erro do provedor de IA;
+- falhas HTTP 5xx em rotas de integrações e webhooks.
+
+Defina `OPERATIONAL_ALERT_WEBHOOK_URL` no Render para encaminhar esses eventos a
+um webhook HTTPS. O corpo contém somente categoria, evento, gravidade, rota,
+código HTTP, ambiente e identificador técnico da requisição. E-mails, senhas,
+tokens, endereços IP e conteúdo enviado pelo cliente nunca são incluídos.
+
+Alertas iguais são agrupados por cinco minutos por padrão para evitar excesso de
+notificações. Ajuste `OPERATIONAL_ALERT_COOLDOWN_SECONDS` se necessário. Uma
+falha no próprio webhook é registrada nos logs e não altera a resposta original
+da API.
+
 O acionamento manual oferece o seletor `run_mode`. Para testar o alerta, escolha
 `simulate-failure`. Esse modo não consulta nem interrompe a produção: apenas
 percorre o mesmo fluxo de falha usado pelo monitor, cria a ocorrência e deixa a

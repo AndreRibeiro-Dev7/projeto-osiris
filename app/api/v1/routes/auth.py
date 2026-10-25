@@ -7,7 +7,7 @@ from typing import Annotated
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,6 +56,7 @@ from app.schemas.auth import (
 )
 from app.services.appointment import AppointmentService
 from app.services.auth import AuthService
+from app.services.operational_alerts import OperationalAlert, dispatch_operational_alert
 
 router = APIRouter(prefix="/auth")
 logger = logging.getLogger(__name__)
@@ -144,6 +145,7 @@ async def login(
 
 @router.post("/password-reset/request", response_model=PasswordResetRequestedResponse)
 async def request_password_reset(
+    request: Request,
     payload: PasswordResetRequest,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PasswordResetRequestedResponse:
@@ -163,6 +165,17 @@ async def request_password_reset(
                 )
             except httpx.HTTPError:
                 logger.exception("Could not deliver a password recovery code")
+                await dispatch_operational_alert(
+                    OperationalAlert(
+                        category="email",
+                        event="password_reset_delivery_failed",
+                        severity="error",
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        route="/api/v1/auth/password-reset/request",
+                    ),
+                    request_id=getattr(request.state, "request_id", None),
+                    settings=settings,
+                )
         elif settings.environment == "development" or not settings.email_delivery_enabled:
             development_code = code
     return PasswordResetRequestedResponse(
