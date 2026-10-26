@@ -212,6 +212,8 @@ O procedimento de proteção dos dados está no
 [Guia de backup e recuperação](./docs/backups.md).
 O monitor de disponibilidade está descrito no
 [Guia de monitoramento e alertas](./docs/monitoring.md).
+O tratamento de falhas está documentado no
+[Procedimento de resposta a incidentes](./docs/incident-response.md).
 O repositório também inclui um `render.yaml` para a primeira homologação online.
 
 ## Autor

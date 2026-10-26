@@ -85,6 +85,16 @@ notificações. Ajuste `OPERATIONAL_ALERT_COOLDOWN_SECONDS` se necessário. Uma
 falha no próprio webhook é registrada nos logs e não altera a resposta original
 da API.
 
+Em 25 de outubro de 2026, o envio ao Discord foi validado em produção pelo teste
+seguro disponível apenas ao proprietário principal. A mensagem chegou ao canal
+configurado com HTTP 200, rota, ambiente, categoria e identificador da requisição,
+sem incluir dados pessoais ou segredos.
+
+Quando um alerta real chegar, siga o
+[procedimento de resposta a incidentes](./incident-response.md). Ele define os
+canais usados, a prioridade, os responsáveis, os passos de diagnóstico e os
+critérios para considerar o serviço recuperado.
+
 O acionamento manual oferece o seletor `run_mode`. Para testar o alerta, escolha
 `simulate-failure`. Esse modo não consulta nem interrompe a produção: apenas
 percorre o mesmo fluxo de falha usado pelo monitor, cria a ocorrência e deixa a
