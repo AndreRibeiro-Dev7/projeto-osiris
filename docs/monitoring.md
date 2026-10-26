@@ -101,3 +101,34 @@ percorre o mesmo fluxo de falha usado pelo monitor, cria a ocorrência e deixa a
 execução vermelha de forma intencional. Depois, execute novamente escolhendo
 `health-check`; essa opção valida API e banco e encerra a ocorrência
 automaticamente.
+
+## Métricas de operações críticas
+
+As operações de agendamento e financeiro geram o evento estruturado
+`business.metric` nos logs da API. Cada tentativa registra somente rótulos
+estáveis e seguros:
+
+- `metric_name`: `osiris_critical_operation_total`;
+- `metric_category`: `scheduling` ou `financial`;
+- `metric_operation`: ação executada, como criação, confirmação, cancelamento,
+  pagamento, despesa ou relatório;
+- `metric_outcome`: `success`, `rejected` para respostas HTTP 4xx ou `error` para
+  respostas HTTP 5xx;
+- `metric_value`: sempre `1`, para permitir a contagem dos eventos;
+- método, modelo da rota, HTTP, duração e `request_id` para correlação.
+
+Os eventos não incluem identificador da empresa, cliente, profissional ou
+despesa, nem valores, forma de pagamento ou conteúdo enviado. Dessa forma, os
+totais e taxas de erro podem ser calculados no Render sem expor dados pessoais
+ou financeiros.
+
+Para validar depois do deploy:
+
+1. execute um agendamento fictício e uma tarefa financeira controlada;
+2. abra **Render → osiris-api → Logs** e pesquise por `business.metric`;
+3. confirme que as categorias, operações e resultados correspondem às ações;
+4. confirme que nenhum identificador real ou valor aparece no evento;
+5. pesquise `outcome=error` e revise qualquer ocorrência com o `request_id`.
+
+O item correspondente do checklist só deve ser marcado depois dessa validação
+no ambiente publicado.

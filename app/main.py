@@ -18,6 +18,7 @@ from app.services.operational_alerts import (
     classify_operational_failure,
     dispatch_operational_alert,
 )
+from app.services.operational_metrics import record_critical_operation_metric
 
 logger = logging.getLogger(__name__)
 request_logger = logging.getLogger("app.http")
@@ -126,6 +127,13 @@ def create_app() -> FastAPI:
                 "status_code": response.status_code,
                 "duration_ms": duration_ms,
             },
+        )
+        record_critical_operation_metric(
+            method=request.method,
+            route=route_template(),
+            status_code=response.status_code,
+            duration_ms=duration_ms,
+            request_id=request_id,
         )
         operational_alert = classify_operational_failure(
             route=route_template(),

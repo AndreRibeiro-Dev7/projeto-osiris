@@ -44,6 +44,14 @@ class SanitizingJsonFormatter(logging.Formatter):
         "route",
         "status_code",
         "duration_ms",
+        "metric_name",
+        "metric_category",
+        "metric_operation",
+        "metric_outcome",
+        "metric_value",
+        "alert_category",
+        "alert_event",
+        "alert_severity",
     )
 
     def format(self, record: logging.LogRecord) -> str:
