@@ -2,14 +2,17 @@
 
 Este documento reúne as condições recomendadas para transformar o MVP do
 Projeto Osiris em uma aplicação segura para uma barbearia real. Um item só deve
-ser marcado quando tiver sido executado e validado no ambiente de produção.
+ser marcado com evidência de execução no ambiente correspondente: os testes e as
+migrações preparatórias em homologação; a infraestrutura e as configurações
+operacionais em produção. A aprovação em homologação não substitui a validação
+da versão implantada.
 
 ## 1. Preparação da versão
 
 - [ ] Revisar alterações pendentes e remover arquivos temporários.
 - [ ] Confirmar que nenhuma chave, senha ou dado pessoal está versionado.
 - [ ] Executar testes, lint, formatação e verificação de tipos.
-- [ ] Aplicar todas as migrações em um banco de homologação.
+- [x] Aplicar todas as migrações em um banco de homologação.
 - [ ] Criar uma versão identificável e documentar como fazer rollback.
 
 ## 2. Infraestrutura
@@ -27,7 +30,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [ ] Gerar uma chave JWT exclusiva e forte para produção.
 - [ ] Desativar `DEBUG` e restringir a documentação da API em produção.
 - [ ] Aplicar limites de requisição em login, IA e endpoints públicos.
-- [ ] Revisar autorização e isolamento dos dados de cada empresa.
+- [x] Revisar autorização e isolamento dos dados de cada empresa.
 - [ ] Criar trilha de auditoria para ações administrativas e financeiras.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).
 - [ ] Revisar dependências e corrigir vulnerabilidades conhecidas.
@@ -58,7 +61,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [ ] Testar agendamento público e fluxo completo do assistente.
 - [ ] Testar pagamentos, comissões, despesas, metas e relatórios.
 - [ ] Testar interface em celular, tablet e computador.
-- [ ] Testar isolamento com duas empresas diferentes.
+- [x] Testar isolamento com duas empresas diferentes.
 - [ ] Realizar teste de carga compatível com o uso esperado.
 - [ ] Fazer homologação com dados fictícios e depois com o cliente piloto.
 
@@ -71,6 +74,9 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [ ] Registrar feedback e priorizar correções antes de aceitar novos clientes.
 
 ## Critério de conclusão
+
+A evidência da revisão de autorização, das migrações e do teste com duas empresas
+está no [guia de autenticação](./authentication.md#resultado-da-homologação).
 
 O Osiris pode ser considerado pronto para operação comercial quando os itens
 críticos de infraestrutura, segurança, backup, acesso, agenda e pagamentos

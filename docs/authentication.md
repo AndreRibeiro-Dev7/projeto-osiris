@@ -68,9 +68,8 @@ e repositórios simulados. A suíte verifica:
 - rejeição desse vínculo inconsistente também no login;
 - proteção da conta principal contra alteração pelo coproprietário.
 
-Essa revisão não modifica dados de produção. O checklist de homologação com duas
-empresas deve permanecer pendente até a validação com banco e contas isolados no
-ambiente de homologação.
+Essa revisão não modifica dados de produção. A validação com banco e contas
+isolados complementa os testes simulados, conforme o resultado registrado abaixo.
 
 ## Homologação com PostgreSQL real
 
@@ -98,3 +97,18 @@ O job independente `tenant-isolation` do CI repete a homologação em um serviç
 PostgreSQL descartável do GitHub Actions. Seus valores de autenticação são
 exclusivos desse serviço temporário. A execução normal de `pytest` pula essa
 verificação quando o banco de integração não está explicitamente configurado.
+
+### Resultado da homologação
+
+Em 26 de outubro de 2026, o proprietário executou o programa no PowerShell e
+apresentou a saída completa da homologação:
+
+- PostgreSQL temporário inicializado e todas as migrações aplicadas, da criação
+  das tabelas até `3d4e5f6a7b8c` (bloqueio persistente de login);
+- teste de integração aprovado: `1 passed in 5.06s`, com duas empresas e seis
+  contas fictícias, passando pelos serviços e repositórios reais;
+- remoção do container e do banco temporários confirmada, sem criação de volumes.
+
+Essa execução conclui os itens de migrações em homologação, revisão de
+autorização e teste de isolamento com duas empresas. Não comprova o deploy da
+versão nem substitui a homologação dos demais fluxos comerciais.
