@@ -45,7 +45,10 @@ PostgreSQL temporário, autenticação e requisições HTTP reais à aplicação
 - Persistência da meta mensal e recusa de intervalos de data inválidos.
 - Impedimento de leitura financeira de outra barbearia.
 
-A homologação PostgreSQL deste novo cenário está pendente. Execute o mesmo
-`scripts/test_tenant_isolation.py` usado nas homologações anteriores; ele aplica
-migrações e executa todas as integrações sem utilizar o banco de produção.
-O cenário financeiro não envia mensagens nem realiza cobranças externas.
+Em 27/10/2026, André executou `scripts/test_tenant_isolation.py` com Docker:
+as migrações foram aplicadas até `4e5f6a7b8c9d` e os cinco testes de integração
+passaram em 12,22 segundos, incluindo o novo cenário financeiro completo.
+O script confirmou a remoção do container e banco temporários, sem criar volumes.
+O banco de produção não foi utilizado; não houve cobranças nem mensagens reais.
+A homologação isolada está concluída. A publicação e a aprovação do commit no
+GitHub Actions ainda devem ser conferidas, assim como o uso da versão implantada.
