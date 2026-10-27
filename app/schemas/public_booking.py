@@ -27,6 +27,7 @@ class PublicBusiness(BaseModel):
     timezone: str
     barbers: list[PublicBarber]
     services: list[PublicService]
+    whatsapp_recovery_enabled: bool = False
 
 
 class PublicBookingCreate(BaseModel):

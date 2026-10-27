@@ -18,6 +18,8 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       let bookingRequests = 0;
       let confirmationRequests = 0;
       let currentStatus = 'scheduled';
+      let recoveryEnabled = false;
+      let recoveryRequests = 0;
       page.on('pageerror', error => errors.push(error.message));
       const summary = {
         business_id: 'test-business', business_name: 'Test business',
@@ -29,7 +31,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
         const pathname = new URL(request.url()).pathname;
         if (pathname.startsWith('/dashboard/booking/')) {
           const filename = pathname.split('/').pop() || 'index.html';
-          assert.ok(['index.html', 'booking.css', 'manage.css', 'booking.js'].includes(filename));
+          assert.ok(['index.html', 'booking.css', 'manage.css', 'booking.js', 'access.js'].includes(filename));
           return route.fulfill({ path: path.join(__dirname, '../dist/booking', filename) });
         }
         if (pathname === '/api/v1/public/businesses/appointments/test-token/cancel') {
@@ -50,6 +52,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
         if (pathname === '/api/v1/public/businesses/test-business') {
           return route.fulfill({ json: {
             id: 'test-business', name: 'Test business', timezone: 'America/Sao_Paulo',
+            whatsapp_recovery_enabled: recoveryEnabled,
             services: [{ id: 'service', name: 'Test service', duration_minutes: 30, price_cents: 2500 }],
             barbers: [{ id: 'barber', full_name: 'Test barber' }],
           } });
@@ -63,6 +66,20 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
           });
           bookingRequests++;
           return route.fulfill({ json: { ...summary, starts_at: '2026-10-27T11:30:00-03:00', booking_token: 'test-token' } });
+        }
+        if (pathname === '/api/v1/public/businesses/test-business/access/request') {
+          assert.deepEqual(request.postDataJSON(), { phone: '11999999999', consent: true });
+          recoveryRequests++;
+          return route.fulfill({ json: { challenge_id: 'challenge', expires_in: 300, resend_after: 60 } });
+        }
+        if (pathname === '/api/v1/public/businesses/test-business/access/verify') {
+          const body = request.postDataJSON();
+          assert.equal(body.phone, '11999999999');
+          assert.equal(body.challenge_id, 'challenge');
+          if (body.code !== '123456') {
+            return route.fulfill({ status: 400, json: { detail: 'Código inválido ou expirado.' } });
+          }
+          return route.fulfill({ json: { bookings: [{ ...summary, booking_token: 'test-token' }] } });
         }
         if (pathname.endsWith('/availability')) {
           return route.fulfill({ json: { slots: [
@@ -79,6 +96,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       await page.locator('#booking-confirmation').waitFor({ state: 'hidden' });
       await page.locator('#customer-fields').waitFor({ state: 'visible' });
       await page.locator('#success').waitFor({ state: 'hidden' });
+      await page.locator('#recover-bookings').waitFor({ state: 'hidden' });
       await page.locator('#service').selectOption('service');
       await page.locator('#barber').selectOption('barber');
       await page.getByRole('button', { name: '11:30', exact: true }).waitFor();
@@ -196,6 +214,38 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       assert.equal(bookingRequests, 2);
       assert.match(await page.locator('#saved-notice').textContent(), /não permitiu salvar/);
       assert.notEqual(await page.locator('#backup-link').getAttribute('open'), null);
+      recoveryEnabled = true;
+      currentStatus = 'scheduled';
+      await page.goto('http://osiris.test/dashboard/booking/?business_id=test-business');
+      await page.locator('#recover-bookings').waitFor({ state: 'visible' });
+      await page.locator('#access-panel>summary').click();
+      await page.locator('#access-phone').fill('11999999999');
+      await page.locator('#access-consent').check();
+      await page.locator('#access-send').click();
+      await page.locator('#access-verify-form').waitFor({ state: 'visible' });
+      assert.equal(recoveryRequests, 1);
+      assert.equal(await page.locator('#access-send').isDisabled(), true);
+      assert.match(await page.locator('#access-expiry').textContent(), /5:00|4:59/);
+      await page.locator('#access-code').fill('999999');
+      await page.locator('#access-verify').click();
+      await page.locator('#access-message').filter({ hasText: 'Código inválido' }).waitFor();
+      assert.equal(await page.locator('#access-results button').count(), 0);
+      await page.clock.fastForward(301 * 1000);
+      assert.match(await page.locator('#access-expiry').textContent(), /expirou/);
+      assert.equal(await page.locator('#access-send').isDisabled(), false);
+      await page.locator('#access-send').click();
+      await page.waitForFunction(() => document.getElementById('access-send').disabled);
+      await page.locator('#access-code').fill('123456');
+      await page.locator('#access-verify').click();
+      await page.locator('#access-message').filter({ hasText: 'WhatsApp verificado!' }).waitFor();
+      assert.equal(recoveryRequests, 2);
+      assert.equal(await page.locator('#access-results button').count(), 1);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      if (process.env.OSIRIS_SCREENSHOTS) {
+        await page.screenshot({ path: `work/booking-recovery-${viewport.width}.png`, fullPage: true });
+      }
+      await page.locator('#access-results button').click();
+      await page.locator('#manage').waitFor({ state: 'visible' });
       assert.deepEqual(errors, []);
     } finally {
       await browser.close();

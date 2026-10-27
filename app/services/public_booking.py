@@ -6,11 +6,13 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import utc_now
+from app.core.config import get_settings
 from app.core.exceptions import (
     InvalidSchedulingReferenceError,
     ResourceNotFoundError,
     SchedulingConflictError,
 )
+from app.integrations.whatsapp_delivery import recovery_is_available
 from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
@@ -51,6 +53,7 @@ class PublicBookingService:
             id=business.id,
             name=business.name,
             timezone=business.timezone,
+            whatsapp_recovery_enabled=recovery_is_available(get_settings()),
             barbers=[
                 PublicBarber(id=item.id, full_name=item.full_name)
                 for item in barbers

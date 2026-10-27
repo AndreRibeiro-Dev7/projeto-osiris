@@ -6,6 +6,7 @@ from app.models.audit_log import AuditLog
 from app.models.barber import Barber
 from app.models.barber_schedule import BarberSchedule
 from app.models.barber_time_off import BarberTimeOff
+from app.models.booking_access import BookingAccessChallenge, BookingAccessThrottle
 from app.models.business import Business
 from app.models.business_closure import BusinessClosure
 from app.models.customer import Customer
@@ -23,6 +24,8 @@ __all__ = [
     "BarberSchedule",
     "BarberTimeOff",
     "Business",
+    "BookingAccessChallenge",
+    "BookingAccessThrottle",
     "BusinessClosure",
     "Customer",
     "Expense",

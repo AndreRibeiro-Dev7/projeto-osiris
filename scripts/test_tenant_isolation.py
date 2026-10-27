@@ -56,6 +56,8 @@ def main() -> int:
         "DISCORD_ALERT_WEBHOOK_URL": "",
         "OPENAI_API_KEY": "",
         "RESEND_API_KEY": "",
+        "WHATSAPP_RECOVERY_ENABLED": "false",
+        "WHATSAPP_ACCESS_TOKEN": "",
     }
     created = False
     try:
@@ -110,6 +112,9 @@ def main() -> int:
             if result.returncode:
                 return result.returncode
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
+        print(
+            "Recuperacao WhatsApp validada com envio simulado: codigo unico, limites e isolamento."
+        )
         print(
             "Fluxo publico validado: cliente novo, conflito, "
             "confirmacao, reagendamento e cancelamento."

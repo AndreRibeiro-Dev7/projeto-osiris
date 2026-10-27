@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = "Osiris <onboarding@resend.dev>"
     email_delivery_enabled: bool = False
+    whatsapp_recovery_enabled: bool = False
+    whatsapp_access_token: str = ""
+    whatsapp_phone_number_id: str = ""
+    whatsapp_api_version: str = ""
+    whatsapp_auth_template: str = "osiris_booking_access"
+    whatsapp_template_language: str = "pt_BR"
     discord_alert_webhook_url: str = ""
     operational_alert_cooldown_seconds: int = 300
     operational_alert_timeout_seconds: float = 5.0

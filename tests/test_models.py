@@ -12,6 +12,8 @@ def test_scheduling_models_are_registered_in_metadata() -> None:
         "barbers",
         "businesses",
         "business_closures",
+        "booking_access_challenges",
+        "booking_access_throttles",
         "customers",
         "expenses",
         "services",
