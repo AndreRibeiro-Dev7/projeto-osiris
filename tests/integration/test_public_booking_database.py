@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -110,6 +110,11 @@ async def check_public_booking_lifecycle() -> None:
             }
 
             # New customer, persisted appointment and secure management token.
+            elapsed_start = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+            response = await client.post(
+                f"{public_base}/appointments", json={**payload, "starts_at": elapsed_start}
+            )
+            assert response.status_code == 409
             response = await client.post(f"{public_base}/appointments", json=payload)
             assert response.status_code == 201
             result = response.json()
@@ -122,6 +127,15 @@ async def check_public_booking_lifecycle() -> None:
                 datetime.fromisoformat(first) + timedelta(minutes=30)
             )
             manage_url = f"/api/v1/public/businesses/appointments/{booking_token}"
+            response = await client.patch(
+                f"{manage_url}/reschedule",
+                json={
+                    "barber_id": str(barber_id),
+                    "service_id": str(service_id),
+                    "starts_at": elapsed_start,
+                },
+            )
+            assert response.status_code == 409
             async with async_session_factory() as session:
                 customer = await session.get(Customer, customer_id)
                 assert customer is not None and customer.business_id == business_id

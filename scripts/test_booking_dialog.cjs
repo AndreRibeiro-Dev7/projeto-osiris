@@ -12,6 +12,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
     });
     try {
       const page = await browser.newPage({ viewport });
+      await page.clock.install({ time: new Date('2026-10-27T14:14:00Z') });
       const errors = [];
       let cancellationRequests = 0;
       page.on('pageerror', error => errors.push(error.message));
@@ -43,6 +44,13 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
             barbers: [{ id: 'barber', full_name: 'Test barber' }],
           } });
         }
+        if (pathname.endsWith('/availability')) {
+          return route.fulfill({ json: { slots: [
+            { starts_at: '2026-10-27T10:30:00-03:00', ends_at: '2026-10-27T11:00:00-03:00' },
+            { starts_at: '2026-10-27T11:00:00-03:00', ends_at: '2026-10-27T11:30:00-03:00' },
+            { starts_at: '2026-10-27T11:30:00-03:00', ends_at: '2026-10-27T12:00:00-03:00' },
+          ] } });
+        }
         throw new Error(`Unexpected test request: ${pathname}`);
       });
 
@@ -51,6 +59,16 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       await page.locator('#booking-confirmation').waitFor({ state: 'hidden' });
       await page.locator('#customer-fields').waitFor({ state: 'visible' });
       await page.locator('#success').waitFor({ state: 'hidden' });
+      await page.locator('#service').selectOption('service');
+      await page.locator('#barber').selectOption('barber');
+      await page.getByRole('button', { name: '11:30', exact: true }).waitFor();
+      assert.equal(await page.locator('.slot').count(), 1);
+      await page.getByRole('button', { name: '11:30', exact: true }).click();
+      assert.equal(await page.locator('#submit').isDisabled(), false);
+      await page.clock.fastForward(17 * 60 * 1000);
+      await page.waitForFunction(() => document.querySelectorAll('.slot').length === 0);
+      assert.equal(await page.locator('#submit').isDisabled(), true);
+      assert.match(await page.locator('#error').textContent(), /já passou/);
 
       await page.goto('http://osiris.test/dashboard/booking/?booking_token=test-token');
       await page.locator('#manage').waitFor({ state: 'visible' });

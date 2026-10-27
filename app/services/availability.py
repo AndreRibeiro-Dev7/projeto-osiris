@@ -1,11 +1,12 @@
 """Use cases for barber working hours and free time slots."""
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utc_now
 from app.core.exceptions import (
     InactiveBarberError,
     InvalidSchedulingReferenceError,
@@ -149,6 +150,7 @@ class AvailabilityService:
             else None
         )
         slots: list[AvailabilitySlot] = []
+        current_instant = utc_now()
         starts_at = work_starts_at
         while starts_at + slot_length <= work_ends_at:
             ends_at = starts_at + slot_length
@@ -165,7 +167,12 @@ class AvailabilityService:
                 and break_starts_at < ends_at
                 and break_ends_at > starts_at
             )
-            if not appointment_conflict and not time_off_conflict and not break_conflict:
+            if (
+                starts_at.astimezone(UTC) > current_instant
+                and not appointment_conflict
+                and not time_off_conflict
+                and not break_conflict
+            ):
                 slots.append(AvailabilitySlot(starts_at=starts_at, ends_at=ends_at))
             starts_at = ends_at
 

@@ -1,11 +1,16 @@
 """Customer-facing booking use cases."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import InvalidSchedulingReferenceError, ResourceNotFoundError
+from app.core.clock import utc_now
+from app.core.exceptions import (
+    InvalidSchedulingReferenceError,
+    ResourceNotFoundError,
+    SchedulingConflictError,
+)
 from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
@@ -67,6 +72,7 @@ class PublicBookingService:
     async def create(
         self, business_id: UUID, payload: PublicBookingCreate
     ) -> PublicBookingResponse:
+        self._require_future_start(payload.starts_at)
         business = await self._businesses.get_by_id(business_id)
         if business is None:
             raise ResourceNotFoundError("Business not found.")
@@ -89,6 +95,7 @@ class PublicBookingService:
             )
             await self._session.flush()
         ends_at = payload.starts_at + timedelta(minutes=service.duration_minutes)
+        self._require_future_start(payload.starts_at)
         appointment = await AppointmentService(self._session).create(
             business_id,
             AppointmentCreate(
@@ -151,7 +158,13 @@ class PublicBookingService:
         appointment = await self._appointments.get_by_public_token(public_token)
         if appointment is None:
             raise ResourceNotFoundError("Appointment not found.")
+        self._require_future_start(payload.starts_at)
         await AppointmentService(self._session).reschedule(
             appointment.business_id, appointment.id, payload
         )
         return await self.summary(public_token)
+
+    @staticmethod
+    def _require_future_start(starts_at: datetime) -> None:
+        if starts_at <= utc_now():
+            raise SchedulingConflictError("Este horário já passou. Escolha um horário futuro.")

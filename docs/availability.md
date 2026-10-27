@@ -1,5 +1,18 @@
 # Disponibilidade de horários
 
+Somente inícios posteriores ao instante atual são oferecidos. A jornada usa o
+fuso cadastrado na barbearia e a comparação usa UTC, independentemente do fuso
+do servidor. Por exemplo, às 11:14, uma jornada com intervalos de 30 minutos
+não oferece 11:00; o próximo início possível é 11:30, se estiver livre.
+
+Datas passadas não retornam horários. Na página pública, horários expirados são
+retirados a cada 15 segundos e ao voltar à página; se o horário selecionado
+expirar, a seleção é limpa e o botão de confirmar é desabilitado. O formulário
+também revalida o horário ao enviar. A API rejeita reserva ou reagendamento
+público para um instante passado ou igual ao atual com HTTP 409, mesmo que a
+página estivesse aberta antes de o horário expirar. Essa regra não impede o
+registro administrativo de atendimentos históricos pelo proprietário.
+
 ## Configurar a jornada semanal
 
 Use `PUT /api/v1/businesses/{business_id}/barbers/{barber_id}/schedule/{weekday}`.

@@ -26,6 +26,14 @@ BARBER_ID = UUID("0d15a1e1-31bd-437d-809f-71cfbe12569e")
 MONDAY = date(2026, 9, 7)
 
 
+@pytest.fixture(autouse=True)
+def fixed_clock(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "app.services.availability.utc_now",
+        lambda: datetime(2026, 9, 6, 12, tzinfo=UTC),
+    )
+
+
 def make_service(
     *,
     schedule: BarberSchedule | None,
@@ -150,3 +158,52 @@ def test_availability_rejects_inactive_barber() -> None:
                 appointment_date=MONDAY,
             )
         )
+
+
+@pytest.mark.parametrize(
+    ("current_instant", "expected"),
+    [
+        (datetime(2026, 10, 27, 14, 14, tzinfo=UTC), ["11:30"]),
+        (datetime(2026, 10, 27, 14, 30, tzinfo=UTC), []),
+        (datetime(2026, 10, 28, 14, 14, tzinfo=UTC), []),
+        (
+            datetime(2026, 10, 26, 14, 14, tzinfo=UTC),
+            ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30"],
+        ),
+    ],
+)
+def test_availability_only_offers_future_starts(
+    current_instant: datetime, expected: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    schedule = make_monday_schedule()
+    schedule.ends_at = time(12)
+    service = make_service(schedule=schedule)
+    monkeypatch.setattr("app.services.availability.utc_now", lambda: current_instant)
+
+    response = asyncio.run(
+        service.list_available_slots(
+            business_id=BUSINESS_ID, barber_id=BARBER_ID, appointment_date=date(2026, 10, 27)
+        )
+    )
+
+    assert [slot.starts_at.strftime("%H:%M") for slot in response.slots] == expected
+
+
+def test_availability_uses_business_date_even_when_utc_day_is_different(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    schedule = make_monday_schedule()
+    schedule.starts_at, schedule.ends_at = time(22), time(23)
+    service = make_service(schedule=schedule)
+    service._businesses.get_by_id.return_value.timezone = "Pacific/Honolulu"
+    monkeypatch.setattr(
+        "app.services.availability.utc_now", lambda: datetime(2026, 10, 28, 8, 14, tzinfo=UTC)
+    )
+
+    response = asyncio.run(
+        service.list_available_slots(
+            business_id=BUSINESS_ID, barber_id=BARBER_ID, appointment_date=date(2026, 10, 27)
+        )
+    )
+
+    assert [slot.starts_at.strftime("%H:%M") for slot in response.slots] == ["22:30"]
