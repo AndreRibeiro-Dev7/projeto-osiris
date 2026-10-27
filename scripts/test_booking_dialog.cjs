@@ -16,6 +16,8 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       const errors = [];
       let cancellationRequests = 0;
       let bookingRequests = 0;
+      let confirmationRequests = 0;
+      let currentStatus = 'scheduled';
       page.on('pageerror', error => errors.push(error.message));
       const summary = {
         business_id: 'test-business', business_name: 'Test business',
@@ -33,10 +35,17 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
         if (pathname === '/api/v1/public/businesses/appointments/test-token/cancel') {
           assert.equal(request.method(), 'PATCH');
           cancellationRequests++;
+          currentStatus = 'cancelled';
           return route.fulfill({ json: { ...summary, status: 'cancelled' } });
         }
         if (pathname === '/api/v1/public/businesses/appointments/test-token') {
-          return route.fulfill({ json: summary });
+          return route.fulfill({ json: { ...summary, status: currentStatus } });
+        }
+        if (pathname === '/api/v1/public/businesses/appointments/test-token/confirm') {
+          assert.equal(request.method(), 'PATCH');
+          confirmationRequests++;
+          currentStatus = 'confirmed';
+          return route.fulfill({ json: { ...summary, status: currentStatus } });
         }
         if (pathname === '/api/v1/public/businesses/test-business') {
           return route.fulfill({ json: {
@@ -111,8 +120,35 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       assert.match(await page.locator('#success-detail').textContent(), /11:30/);
       assert.match(await page.locator('#cancellation-link').inputValue(), /booking_token=test-token/);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.equal(await page.locator('#backup-link').getAttribute('open'), null);
+      assert.match(await page.locator('#saved-notice').textContent(), /Meus agendamentos/);
+      if (process.env.OSIRIS_SCREENSHOTS) {
+        await page.screenshot({ path: `work/booking-success-${viewport.width}.png`, fullPage: true });
+      }
+      const saved = await page.evaluate(() => localStorage.getItem('osiris:bookings:test-business'));
+      assert.equal(JSON.parse(saved)[0].token, 'test-token');
+      assert.doesNotMatch(saved, /Cliente de teste|11999999999/);
+      assert.equal(confirmationRequests, 0);
+      await page.locator('#view-booking').click();
+      await page.locator('#manage').waitFor({ state: 'visible' });
+      assert.equal(new URL(page.url()).searchParams.get('booking_token'), null);
+      await page.locator('#confirm-booking').click();
+      await page.getByRole('heading', { name: 'Presença confirmada', exact: true }).waitFor();
+      assert.equal(confirmationRequests, 1);
+      await page.evaluate(() => localStorage.setItem('osiris:bookings:other-business', JSON.stringify([
+        { token: 'other-token', service_name: 'Other business booking', starts_at: '2030-01-18T12:00:00Z' },
+      ])));
+      await page.locator('#back-to-bookings').click();
+      await page.locator('#saved-bookings').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('.saved-booking').count(), 1);
+      assert.doesNotMatch(await page.locator('#saved-booking-list').textContent(), /Other business/);
+      if (process.env.OSIRIS_SCREENSHOTS) {
+        await page.screenshot({ path: `work/booking-saved-${viewport.width}.png`, fullPage: true });
+      }
+      await page.locator('.saved-booking').click();
+      await page.locator('#manage').waitFor({ state: 'visible' });
+      assert.equal(new URL(page.url()).searchParams.get('booking_token'), null);
 
-      await page.goto('http://osiris.test/dashboard/booking/?booking_token=test-token');
       await page.locator('#manage').waitFor({ state: 'visible' });
       await page.locator('#booking-confirmation').waitFor({ state: 'hidden' });
       assert.equal(cancellationRequests, 0);
@@ -136,6 +172,30 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       await page.locator('#booking-confirmation').waitFor({ state: 'hidden' });
       await page.locator('#cancel-booking').waitFor({ state: 'hidden' });
       assert.equal(cancellationRequests, 1);
+      await page.locator('#back-to-bookings').click();
+      await page.locator('#saved-bookings').waitFor({ state: 'visible' });
+      await page.locator('#forget-bookings').click();
+      await page.locator('#saved-bookings').waitFor({ state: 'hidden' });
+      assert.equal(cancellationRequests, 1);
+      assert.equal(await page.evaluate(() => localStorage.getItem('osiris:bookings:test-business')), null);
+
+      // Older links still work, and remembering a reservation is optional.
+      await page.goto('http://osiris.test/dashboard/booking/?booking_token=test-token');
+      await page.locator('#manage-title').filter({ hasText: 'Agendamento cancelado' }).waitFor();
+      await page.addInitScript(() => {
+        Storage.prototype.setItem = () => { throw new Error('Storage disabled'); };
+      });
+      await page.goto('http://osiris.test/dashboard/booking/?business_id=test-business');
+      await page.locator('#service').selectOption('service');
+      await page.locator('#barber').selectOption('barber');
+      await page.getByRole('button', { name: '11:30', exact: true }).click();
+      await page.locator('#name').fill('Cliente de teste');
+      await page.locator('#phone').fill('11999999999');
+      await page.locator('#submit').click();
+      await page.locator('#success').waitFor({ state: 'visible' });
+      assert.equal(bookingRequests, 2);
+      assert.match(await page.locator('#saved-notice').textContent(), /não permitiu salvar/);
+      assert.notEqual(await page.locator('#backup-link').getAttribute('open'), null);
       assert.deepEqual(errors, []);
     } finally {
       await browser.close();
