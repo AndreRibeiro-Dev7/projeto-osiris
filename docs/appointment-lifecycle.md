@@ -47,3 +47,15 @@ da página em celular e o fluxo do assistente de IA têm homologações própria
 A homologação pública deve ser registrada como aprovada somente após a execução
 desse teste com PostgreSQL. A suíte local comum o pula quando não há banco de
 integração configurado.
+
+### Resultado da homologação
+
+Em 26 de outubro de 2026, o proprietário executou o programa no PowerShell e
+apresentou a saída: `2 passed in 5.53s`. O PostgreSQL temporário recebeu todas as
+migrações até `3d4e5f6a7b8c`. Foram aprovados o isolamento entre duas empresas e
+seis contas e o fluxo público de cliente novo, conflito, confirmação,
+reagendamento e cancelamento. O programa confirmou a remoção do container e do
+banco temporários, sem criação de volumes.
+
+Essa evidência valida o fluxo HTTP com banco real. A interação visual em celular
+e o fluxo completo do assistente de IA continuam pendentes de homologação.
