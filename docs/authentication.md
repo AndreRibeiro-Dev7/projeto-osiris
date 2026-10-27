@@ -30,6 +30,44 @@ aleatório de pelo menos 32 bytes e nunca faça commit do arquivo `.env`.
 
 ## Isolamento
 
-Todas as rotas com `business_id` exigem autenticação. Um proprietário só pode
-acessar o `business_id` associado à sua própria conta. Tokens válidos usados
-contra outra barbearia recebem `403 Forbidden`.
+As rotas administrativas de `/api/v1/businesses/{business_id}` exigem
+autenticação e perfil `owner`. Um proprietário ou coproprietário só pode acessar
+o `business_id` associado à sua própria conta. Tokens válidos usados contra
+outra barbearia recebem `403 Forbidden`. O cadastro de uma empresa e as rotas
+de agendamento público têm contratos separados e não concedem acesso ao painel
+administrativo.
+
+Os IDs enviados dentro da URL ou do corpo também são validados: um endereço da
+própria barbearia não permite consultar ou alterar recursos de outra empresa.
+Não basta esconder botões na interface; a autorização acontece na API.
+
+Para o perfil de barbeiro, o profissional vinculado deve estar ativo e pertencer
+à mesma barbearia da conta. Essa regra é verificada ao entrar e em cada
+requisição autenticada. As ações de atendimento também exigem que o agendamento
+pertença ao profissional e à barbearia autenticados.
+
+O coproprietário pode operar sua barbearia, mas não pode gerenciar a conta do
+proprietário principal. A exclusão de acessos de coproprietários exige a conta
+principal e a confirmação da senha atual.
+
+## Revisão automatizada de isolamento
+
+Em 26 de outubro de 2026, a revisão local acrescentou
+`tests/test_tenant_isolation.py`, com testes HTTP usando duas empresas fictícias
+e repositórios simulados. A suíte verifica:
+
+- rejeição de acessos anônimos, proprietários de outra empresa, coproprietários
+  de outra empresa e barbeiros em todas as operações administrativas existentes;
+- acesso permitido à lista de clientes da própria empresa para proprietário e
+  coproprietário;
+- rejeição de IDs de despesas, serviços, clientes e atendimentos de outra empresa
+  mesmo quando o `business_id` da URL pertence à conta;
+- bloqueio da alteração de atendimento de outro profissional;
+- bloqueio de tokens revogados, contas inativas, profissionais inativos e
+  vínculos entre conta e profissional de empresas diferentes;
+- rejeição desse vínculo inconsistente também no login;
+- proteção da conta principal contra alteração pelo coproprietário.
+
+Essa revisão não modifica dados de produção. O checklist de homologação com duas
+empresas deve permanecer pendente até a validação com banco e contas isolados no
+ambiente de homologação.

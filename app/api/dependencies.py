@@ -41,7 +41,7 @@ async def get_current_user(
         barber = (
             await BarberRepository(session).get_by_id(user.barber_id) if user.barber_id else None
         )
-        if barber is None or not barber.is_active:
+        if barber is None or not barber.is_active or barber.business_id != user.business_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="This professional profile is inactive.",
