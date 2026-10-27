@@ -46,8 +46,8 @@ jobs:
         run: pip install ".[dev]"
       - name: Apply migrations to isolated PostgreSQL
         run: alembic upgrade head
-      - name: Validate real tenant boundaries
-        run: pytest tests/integration/test_tenant_database.py -p no:cacheprovider
+      - name: Validate tenant boundaries and public booking
+        run: pytest tests/integration -p no:cacheprovider
 
   quality:
     runs-on: ubuntu-latest

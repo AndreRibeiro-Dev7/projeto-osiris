@@ -102,7 +102,7 @@ def main() -> int:
         environment["OSIRIS_INTEGRATION_DATABASE_URL"] = environment["DATABASE_URL"]
         for arguments in (
             ["-m", "alembic", "upgrade", "head"],
-            ["-m", "pytest", "tests/integration/test_tenant_database.py", "-p", "no:cacheprovider"],
+            ["-m", "pytest", "tests/integration", "-p", "no:cacheprovider"],
         ):
             result = subprocess.run(
                 [sys.executable, *arguments], cwd=ROOT, env=environment, check=False, timeout=180
@@ -110,6 +110,10 @@ def main() -> int:
             if result.returncode:
                 return result.returncode
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
+        print(
+            "Fluxo publico validado: cliente novo, conflito, "
+            "confirmacao, reagendamento e cancelamento."
+        )
         return 0
     finally:
         if created:

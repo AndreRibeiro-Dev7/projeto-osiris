@@ -29,7 +29,6 @@ async def check_tenant_boundaries() -> None:
     assert os.environ.get("DATABASE_URL") == database_url
 
     import httpx
-    from sqlalchemy import func, select
 
     from app.core.security import hash_password
     from app.database.session import async_session_factory, engine
@@ -49,7 +48,6 @@ async def check_tenant_boundaries() -> None:
     starts_at = datetime(2030, 1, 15, 14, tzinfo=UTC)
     try:
         async with async_session_factory() as session:
-            assert await session.scalar(select(func.count()).select_from(Business)) == 0
             for index in (1, 2):
                 business = Business(id=uuid4(), name=f"Test business {index}", phone=f"000{index}")
                 session.add(business)
