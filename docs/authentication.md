@@ -71,3 +71,30 @@ e repositórios simulados. A suíte verifica:
 Essa revisão não modifica dados de produção. O checklist de homologação com duas
 empresas deve permanecer pendente até a validação com banco e contas isolados no
 ambiente de homologação.
+
+## Homologação com PostgreSQL real
+
+Com o Docker Desktop aberto e as dependências de desenvolvimento instaladas,
+execute no ambiente Python do projeto:
+
+```powershell
+.\.venv-codex\Scripts\python.exe .\scripts\test_tenant_isolation.py
+```
+
+O programa cria um PostgreSQL 16 temporário, acessível apenas por `127.0.0.1`,
+aplica as migrações Alembic e testa a API com duas empresas e seis contas
+fictícias. As requisições passam por login, JWT, autorização, serviços e
+repositórios reais, sem substituir dependências. São conferidos clientes,
+financeiro, auditoria, contas administrativas e agenda, incluindo a preservação
+dos registros após tentativas de alteração indevidas e a confirmação legítima
+de um atendimento.
+
+O programa gera credenciais exclusivas para o teste e desativa entregas de e-mail,
+Discord e IA no processo filho. O banco não usa volumes e seu container é
+removido ao final, mesmo quando uma verificação falha. O programa não aceita uma
+URL de banco de produção como argumento.
+
+O job independente `tenant-isolation` do CI repete a homologação em um serviço
+PostgreSQL descartável do GitHub Actions. Seus valores de autenticação são
+exclusivos desse serviço temporário. A execução normal de `pytest` pula essa
+verificação quando o banco de integração não está explicitamente configurado.

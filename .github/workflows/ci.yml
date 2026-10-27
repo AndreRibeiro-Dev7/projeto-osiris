@@ -7,6 +7,48 @@ on:
     branches: [main]
 
 jobs:
+  tenant-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: osiris_isolation_test_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Credentials belong only to the disposable CI service, never production.
+      DATABASE_URL: postgresql+asyncpg://postgres:isolated-ci-password@127.0.0.1:5432/osiris_isolation_test_ci
+      OSIRIS_INTEGRATION_DATABASE_URL: postgresql+asyncpg://postgres:isolated-ci-password@127.0.0.1:5432/osiris_isolation_test_ci
+      JWT_SECRET_KEY: isolated-ci-signing-key-not-used-in-any-deployment
+      ENVIRONMENT: development
+      API_V1_PREFIX: /api/v1
+      DEBUG: "false"
+      LOG_LEVEL: WARNING
+      OWNER_BOOTSTRAP_ENABLED: "false"
+      EMAIL_DELIVERY_ENABLED: "false"
+      DISCORD_ALERT_WEBHOOK_URL: ""
+      OPENAI_API_KEY: ""
+      RESEND_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install ".[dev]"
+      - name: Apply migrations to isolated PostgreSQL
+        run: alembic upgrade head
+      - name: Validate real tenant boundaries
+        run: pytest tests/integration/test_tenant_database.py -p no:cacheprovider
+
   quality:
     runs-on: ubuntu-latest
     steps:
