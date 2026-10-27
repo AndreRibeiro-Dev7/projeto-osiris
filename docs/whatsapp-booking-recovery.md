@@ -96,3 +96,12 @@ de mensagens reais nem aprovação do modelo na Meta.
 
 O teste real de entrega na Meta e a aprovação do modelo permanecem pendentes até
 configurar a conta. Não habilite o recurso apenas porque os testes simulados passaram.
+
+Em 27/10/2026, o teste de entrega da conta de teste da Meta retornou `130497` no
+webhook, com descrição de restrição de envio para o país do destinatário. Os painéis
+consultados mostraram a conta sem problemas de política e o número conectado, com
+qualidade alta. A relação alegada pelo atendimento automático com uma dívida da
+conta de anúncios não foi tecnicamente comprovada. André deixou a regularização
+desse débito para 02/11/2026; a investigação e ativação do envio ficam pendentes.
+Não há garantia registrada de que o pagamento resolverá o erro. As demais frentes
+do projeto continuam, e `WHATSAPP_RECOVERY_ENABLED` deve permanecer desativado.

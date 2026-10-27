@@ -46,6 +46,7 @@ class ReportService:
         }
         statuses = {status.value: 0 for status in AppointmentStatus}
         barber_totals: dict[UUID, list[int]] = {}
+        barber_commissions: dict[UUID, int] = {}
         service_totals: dict[UUID | None, list[int]] = {}
         payment_totals: dict[str, list[int]] = {}
         revenue = 0
@@ -65,7 +66,12 @@ class ReportService:
             daily = daily_values.setdefault(local_day, [0, 0, 0, 0])
             daily[0] += 1
             daily[1] += amount
-            daily[2] += amount * commissions.get(appointment.barber_id, 0) // 100
+            # Round once per completed appointment, then sum the same cents everywhere.
+            commission = amount * commissions.get(appointment.barber_id, 0) // 100
+            daily[2] += commission
+            barber_commissions[appointment.barber_id] = (
+                barber_commissions.get(appointment.barber_id, 0) + commission
+            )
             barber_total = barber_totals.setdefault(appointment.barber_id, [0, 0])
             barber_total[0] += amount
             barber_total[1] += 1
@@ -107,7 +113,7 @@ class ReportService:
         for row in barber_rows:
             percentage = commissions.get(row.id, 0) if row.id else 0
             row.commission_percentage = percentage
-            row.commission_cents = row.total_cents * percentage // 100
+            row.commission_cents = barber_commissions.get(row.id, 0) if row.id else 0
         total_commission = sum(row.commission_cents or 0 for row in barber_rows)
         for expense in expenses:
             daily_values.setdefault(expense.occurred_on, [0, 0, 0, 0])[3] += expense.amount_cents

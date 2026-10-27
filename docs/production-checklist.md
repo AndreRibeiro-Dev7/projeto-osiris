@@ -62,6 +62,8 @@ da versão implantada.
 - [x] Testar a orquestração do assistente com PostgreSQL real e modelo simulado.
 - [ ] Testar interpretação e respostas do assistente com o provedor real de IA.
 - [ ] Testar pagamentos, comissões, despesas, metas e relatórios.
+  Roteiro automático preparado no [guia de validação financeira](./financial-validation.md);
+  a nova homologação PostgreSQL ainda precisa ser executada.
 - [ ] Testar interface em celular, tablet e computador.
 - [x] Testar isolamento com duas empresas diferentes.
 - [ ] Realizar teste de carga compatível com o uso esperado.

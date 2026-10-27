@@ -24,6 +24,13 @@ class BusinessRepository:
         result = await self._session.scalars(statement)
         return result.one_or_none()
 
+    async def get_by_id_for_update(self, business_id: UUID) -> Business | None:
+        """Serialize monthly generation for the same business across API workers."""
+        result = await self._session.scalars(
+            select(Business).where(Business.id == business_id).with_for_update()
+        )
+        return result.one_or_none()
+
     async def create(
         self,
         *,

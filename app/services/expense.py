@@ -75,7 +75,7 @@ class ExpenseService:
     async def generate_fixed_for_month(
         self, business_id: UUID, target_month: date
     ) -> builtins.list[Expense]:
-        if await self._businesses.get_by_id(business_id) is None:
+        if await self._businesses.get_by_id_for_update(business_id) is None:
             raise ResourceNotFoundError("Business not found.")
         target_start = target_month.replace(day=1)
         target_end = target_start.replace(day=monthrange(target_start.year, target_start.month)[1])
