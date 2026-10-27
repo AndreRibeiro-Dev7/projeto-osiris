@@ -59,7 +59,8 @@ da versão implantada.
 - [ ] Testar cadastro, login, logout e recuperação de acesso.
   Testes específicos de login, bloqueio e recuperação preparados no
   [guia de autenticação](./authentication.md#validação-adicional-de-acesso-em-27102026);
-  a nova homologação PostgreSQL e a entrega real de e-mail permanecem pendentes.
+  a homologação PostgreSQL foi aprovada em 27/10/2026. A entrega real de e-mail
+  e a conferência dos demais fluxos de cadastro e logout permanecem pendentes.
 - [ ] Testar agenda, conflitos, folgas, cancelamento e reagendamento.
 - [x] Testar o fluxo HTTP de agendamento público com PostgreSQL real.
 - [x] Testar a orquestração do assistente com PostgreSQL real e modelo simulado.

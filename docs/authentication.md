@@ -145,9 +145,13 @@ e login passaram em 375 e 1280 pixels, incluindo contador regressivo, liberaçã
 após expirar o bloqueio, indisponibilidade do e-mail, senhas diferentes, código
 incorreto e retorno ao login após redefinir a senha.
 
-O novo `tests/integration/test_auth_database.py` ainda precisa ser homologado com
-PostgreSQL pelo mesmo script: login, cinco falhas simultâneas, expiração do bloqueio,
+Em 27/10/2026, André executou o script com PostgreSQL temporário: os **seis testes
+de integração passaram em 9,74 segundos**, incluindo o novo cenário
+`tests/integration/test_auth_database.py`: login, cinco falhas simultâneas, expiração do bloqueio,
 solicitação concorrente de recuperação, cinco códigos errados, consumo concorrente
 de código válido, revogação de tokens e desativação/reativação de contas e perfil.
 O envio de e-mail é simulado nesse teste, mesmo usando configuração de produção;
 nenhuma mensagem real é enviada. O teste de entrega real pelo Resend segue pendente.
+O script confirmou a remoção do container e banco temporários, sem criar volumes.
+Essa homologação não usou contas nem banco de produção. A publicação das correções
+e a aprovação do novo commit no GitHub Actions ainda devem ser conferidas.
