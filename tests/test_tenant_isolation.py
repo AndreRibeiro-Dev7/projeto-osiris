@@ -200,7 +200,7 @@ def test_barber_login_requires_profile_in_the_same_business(
         business_id=OTHER_BUSINESS_ID if foreign_profile else BUSINESS_ID,
     )
     monkeypatch.setattr(
-        "app.services.auth.UserRepository.get_by_email", AsyncMock(return_value=user)
+        "app.services.auth.UserRepository.get_by_email_for_update", AsyncMock(return_value=user)
     )
     monkeypatch.setattr(
         "app.services.auth.BarberRepository.get_by_id", AsyncMock(return_value=barber)

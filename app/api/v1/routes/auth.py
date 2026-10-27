@@ -62,6 +62,15 @@ router = APIRouter(prefix="/auth")
 logger = logging.getLogger(__name__)
 
 
+def require_email_delivery_or_development() -> None:
+    """Never replace email verification with an inline code outside development."""
+    settings = get_settings()
+    if settings.environment.lower() != "development" and not (
+        settings.email_delivery_enabled and settings.resend_api_key
+    ):
+        raise HTTPException(status_code=503, detail="Email delivery is not configured.")
+
+
 def bootstrap_is_allowed(
     *,
     environment: str,
@@ -150,6 +159,7 @@ async def request_password_reset(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PasswordResetRequestedResponse:
     """Send a recovery code while returning the same response for every email."""
+    require_email_delivery_or_development()
     result = await AuthService(session).request_password_reset(email=str(payload.email))
     settings = get_settings()
     development_code: str | None = None
@@ -176,7 +186,7 @@ async def request_password_reset(
                     request_id=getattr(request.state, "request_id", None),
                     settings=settings,
                 )
-        elif settings.environment == "development" or not settings.email_delivery_enabled:
+        elif settings.environment.lower() == "development":
             development_code = code
     return PasswordResetRequestedResponse(
         detail=("If this email belongs to an active owner account, a recovery code was sent."),
@@ -190,6 +200,7 @@ async def confirm_password_reset(
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
     """Replace an owner password after validating the one-time recovery code."""
+    require_email_delivery_or_development()
     changed = await AuthService(session).confirm_password_reset(
         email=str(payload.email),
         code=payload.code,
@@ -611,6 +622,7 @@ async def request_email_change(
 ) -> EmailChangeRequestedResponse:
     """Send a verification code to a requested replacement email."""
     require_owner_account(current_user)
+    require_email_delivery_or_development()
     try:
         code = await AuthService(session).request_email_change(
             user=current_user,
@@ -639,7 +651,7 @@ async def request_email_change(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="The verification email could not be sent.",
             ) from error
-    elif settings.environment == "development" or not settings.email_delivery_enabled:
+    elif settings.environment.lower() == "development":
         development_code = code
     else:
         raise HTTPException(
@@ -668,6 +680,7 @@ async def confirm_email_change(
 ) -> CurrentUserResponse:
     """Confirm the code and apply the pending login email."""
     require_owner_account(current_user)
+    require_email_delivery_or_development()
     try:
         user = await AuthService(session).confirm_email_change(user=current_user, code=payload.code)
     except DuplicateResourceError as error:

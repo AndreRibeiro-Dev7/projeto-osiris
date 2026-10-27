@@ -1,5 +1,5 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -12,7 +12,7 @@ def make_service(user: SimpleNamespace | None) -> tuple[AuthService, AsyncMock]:
     service = AuthService.__new__(AuthService)
     commit = AsyncMock()
     service._session = SimpleNamespace(commit=commit)
-    service._users = SimpleNamespace(get_by_email=AsyncMock(return_value=user))
+    service._users = SimpleNamespace(get_by_email_for_update=AsyncMock(return_value=user))
     return service, commit
 
 
@@ -39,6 +39,23 @@ def test_password_reset_request_ignores_barber_accounts() -> None:
     result = asyncio.run(service.request_password_reset(email=barber.email))
 
     assert result is None
+    commit.assert_not_awaited()
+
+
+def test_expired_recovery_code_cannot_change_password() -> None:
+    owner = make_owner()
+    service, commit = make_service(owner)
+    owner.password_reset_code_hash = service._password_reset_code_hash(owner.id, "123456")
+    owner.password_reset_expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    changed = asyncio.run(
+        service.confirm_password_reset(
+            email=owner.email,
+            code="123456",
+            new_password="new-fictitious-password-123!",
+        )
+    )
+    assert not changed and owner.auth_version == 0
+    assert verify_password("senha-antiga-forte-123", owner.password_hash)
     commit.assert_not_awaited()
 
 

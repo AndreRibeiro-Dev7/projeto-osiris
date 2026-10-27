@@ -27,6 +27,7 @@ def test_disabling_barber_also_disables_linked_login() -> None:
         business_id=business_id,
         barber_id=barber.id,
         email="barbeiro@osiris.com",
+        auth_version=0,
         password_hash="hash",
         role="barber",
         is_active=True,
@@ -44,4 +45,5 @@ def test_disabling_barber_also_disables_linked_login() -> None:
 
     assert result.is_active is False
     assert account.is_active is False
+    assert account.auth_version == 1
     session.commit.assert_awaited_once()

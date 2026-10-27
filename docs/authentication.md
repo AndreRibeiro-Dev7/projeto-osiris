@@ -112,3 +112,42 @@ apresentou a saída completa da homologação:
 Essa execução conclui os itens de migrações em homologação, revisão de
 autorização e teste de isolamento com duas empresas. Não comprova o deploy da
 versão nem substitui a homologação dos demais fluxos comerciais.
+
+### Validação adicional de acesso em 27/10/2026
+
+Foram adicionadas proteções e testes específicos de autenticação:
+
+- Login e recuperação bloqueiam a linha do usuário durante a decisão. Assim,
+  requisições simultâneas não perdem contagem de erros nem consomem duas vezes
+  o mesmo código de recuperação.
+- Cinco senhas incorretas bloqueiam novas tentativas de login por 15 minutos.
+  A API responde `429` com `Retry-After`; o navegador mostra o tempo restante.
+- Desativar ou reativar uma conta incrementa `auth_version`. A reativação não
+  torna válidos tokens antigos. Isso inclui a conta do profissional vinculada
+  ao perfil quando o proprietário ativa ou desativa esse perfil.
+- Códigos retornados em `development_code` ficam restritos ao ambiente
+  explicitamente `development`. Com envio de e-mail desativado ou sem chave,
+  produção e homologação recusam solicitação e confirmação com `503`, antes de
+  gerar ou consumir códigos. A regra também cobre mudança de e-mail e códigos
+  que tenham sido gerados anteriormente.
+- A recuperação permite apenas contas de proprietário ativas. Com entrega
+  configurada, respostas de solicitação são genéricas para e-mail existente,
+  inexistente ou de profissional; senhas novas precisam de confirmação igual.
+
+Antes desta correção, a condição de fallback também permitia código na resposta
+quando `EMAIL_DELIVERY_ENABLED=false`, independentemente do ambiente. A correção
+fecha essa possibilidade; não é evidência de exploração ou de que essa configuração
+tenha sido usada em produção.
+
+A suíte local passou com **343 testes aprovados** e **6 integrações PostgreSQL
+puladas**. Ruff, Black e mypy passaram. Os quatro testes de navegador de reserva
+e login passaram em 375 e 1280 pixels, incluindo contador regressivo, liberação
+após expirar o bloqueio, indisponibilidade do e-mail, senhas diferentes, código
+incorreto e retorno ao login após redefinir a senha.
+
+O novo `tests/integration/test_auth_database.py` ainda precisa ser homologado com
+PostgreSQL pelo mesmo script: login, cinco falhas simultâneas, expiração do bloqueio,
+solicitação concorrente de recuperação, cinco códigos errados, consumo concorrente
+de código válido, revogação de tokens e desativação/reativação de contas e perfil.
+O envio de e-mail é simulado nesse teste, mesmo usando configuração de produção;
+nenhuma mensagem real é enviada. O teste de entrega real pelo Resend segue pendente.

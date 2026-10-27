@@ -61,6 +61,8 @@ class BarberService:
         if payload.is_active is not None:
             account = await self._users.get_by_barber_id(barber.id)
             if account is not None:
+                if account.is_active != payload.is_active:
+                    account.auth_version += 1
                 account.is_active = payload.is_active
         try:
             await self._session.commit()

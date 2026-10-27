@@ -50,5 +50,7 @@ as migrações foram aplicadas até `4e5f6a7b8c9d` e os cinco testes de integra�
 passaram em 12,22 segundos, incluindo o novo cenário financeiro completo.
 O script confirmou a remoção do container e banco temporários, sem criar volumes.
 O banco de produção não foi utilizado; não houve cobranças nem mensagens reais.
-A homologação isolada está concluída. A publicação e a aprovação do commit no
-GitHub Actions ainda devem ser conferidas, assim como o uso da versão implantada.
+A homologação isolada está concluída. O commit `2058e23` passou no
+[GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40579726851).
+Em 27/10/2026, André informou o deploy como Live no Render e confirmou que a
+conferência visual do financeiro na versão publicada estava correta.

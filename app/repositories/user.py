@@ -21,6 +21,16 @@ class UserRepository:
         statement = select(User).where(func.lower(User.email) == email.lower())
         return (await self._session.scalars(statement)).one_or_none()
 
+    async def get_by_email_for_update(self, email: str) -> User | None:
+        """Serialize login counters and single-use recovery across API workers."""
+        statement = (
+            select(User)
+            .where(func.lower(User.email) == email.lower())
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        return (await self._session.scalars(statement)).one_or_none()
+
     async def count_for_business(self, business_id: UUID) -> int:
         statement = select(func.count(User.id)).where(User.business_id == business_id)
         return int((await self._session.scalar(statement)) or 0)

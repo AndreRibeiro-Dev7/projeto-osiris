@@ -13,7 +13,7 @@ def make_service(user: SimpleNamespace) -> tuple[AuthService, AsyncMock]:
     service = AuthService.__new__(AuthService)
     commit = AsyncMock()
     service._session = SimpleNamespace(commit=commit)
-    service._users = SimpleNamespace(get_by_email=AsyncMock(return_value=user))
+    service._users = SimpleNamespace(get_by_email_for_update=AsyncMock(return_value=user))
     service._barbers = SimpleNamespace(get_by_id=AsyncMock())
     return service, commit
 

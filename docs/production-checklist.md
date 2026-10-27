@@ -57,6 +57,9 @@ da versão implantada.
 ## 6. Testes antes do lançamento
 
 - [ ] Testar cadastro, login, logout e recuperação de acesso.
+  Testes específicos de login, bloqueio e recuperação preparados no
+  [guia de autenticação](./authentication.md#validação-adicional-de-acesso-em-27102026);
+  a nova homologação PostgreSQL e a entrega real de e-mail permanecem pendentes.
 - [ ] Testar agenda, conflitos, folgas, cancelamento e reagendamento.
 - [x] Testar o fluxo HTTP de agendamento público com PostgreSQL real.
 - [x] Testar a orquestração do assistente com PostgreSQL real e modelo simulado.

@@ -160,6 +160,8 @@ class AuthService:
             account.auth_version += 1
             self._clear_login_lock(account)
         if is_active is not None:
+            if account.is_active != is_active:
+                account.auth_version += 1
             account.is_active = is_active
         try:
             await self._session.commit()
@@ -225,6 +227,8 @@ class AuthService:
             account.auth_version += 1
             self._clear_login_lock(account)
         if is_active is not None:
+            if account.is_active != is_active:
+                account.auth_version += 1
             account.is_active = is_active
         try:
             await self._session.commit()
@@ -251,7 +255,7 @@ class AuthService:
 
     async def authenticate(self, *, email: str, password: str) -> User | None:
         """Validate credentials and persist a temporary lock after repeated failures."""
-        user = await self._users.get_by_email(email.lower())
+        user = await self._users.get_by_email_for_update(email.lower())
         if user is None or not user.is_active:
             return None
         now = datetime.now(UTC)
@@ -303,7 +307,7 @@ class AuthService:
 
     async def request_password_reset(self, *, email: str) -> tuple[str, str] | None:
         """Create a rate-limited recovery code only for active owner accounts."""
-        user = await self._users.get_by_email(email.lower())
+        user = await self._users.get_by_email_for_update(email.lower())
         if user is None or user.role != "owner" or not user.is_active:
             return None
         now = datetime.now(UTC)
@@ -322,7 +326,7 @@ class AuthService:
 
     async def confirm_password_reset(self, *, email: str, code: str, new_password: str) -> bool:
         """Replace credentials after a valid one-time code and revoke old sessions."""
-        user = await self._users.get_by_email(email.lower())
+        user = await self._users.get_by_email_for_update(email.lower())
         now = datetime.now(UTC)
         if (
             user is None
