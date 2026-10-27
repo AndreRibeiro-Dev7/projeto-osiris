@@ -59,3 +59,19 @@ banco temporários, sem criação de volumes.
 
 Essa evidência valida o fluxo HTTP com banco real. A interação visual em celular
 e o fluxo completo do assistente de IA continuam pendentes de homologação.
+
+## Regressao visual da confirmacao de cancelamento
+
+O job `booking-ui` executa `scripts/test_booking_dialog.cjs` em Chromium,
+com larguras de 375 e 1280 pixels. As respostas da API usam dados ficticios;
+nenhuma reserva real e alterada.
+
+O teste verifica que a confirmacao comeca oculta, abre somente apos clicar em
+cancelar, fecha com Voltar, Fechar ou Escape e envia exatamente uma requisicao
+somente quando o cliente confirma o cancelamento. Tambem verifica que o modal
+nao aparece ao abrir o formulario de um novo agendamento.
+
+Em 27 de outubro de 2026, os dois cenarios passaram localmente no Chrome em
+modo headless. A correcao aplica `display:none!important` aos elementos com
+`hidden`, evitando que `display:grid` torne o modal visivel sem solicitacao.
+O CSS tem uma nova versao na pagina para atualizar o cache dos navegadores.

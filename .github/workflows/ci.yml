@@ -7,6 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  booking-ui:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser test dependency
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Validate booking dialog on mobile and desktop
+        run: node --test scripts/test_booking_dialog.cjs
+
   tenant-isolation:
     runs-on: ubuntu-latest
     services:
