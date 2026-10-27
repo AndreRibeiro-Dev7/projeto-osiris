@@ -45,5 +45,9 @@ class Business(Base):
         back_populates="business", cascade="all, delete-orphan"
     )
     appointments: Mapped[list[Appointment]] = relationship(back_populates="business")
-    services: Mapped[list[Service]] = relationship(back_populates="business", cascade="all, delete-orphan")
-    expenses: Mapped[list[Expense]] = relationship(back_populates="business", cascade="all, delete-orphan")
+    services: Mapped[list[Service]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+    expenses: Mapped[list[Expense]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )

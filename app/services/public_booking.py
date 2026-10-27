@@ -6,11 +6,11 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InvalidSchedulingReferenceError, ResourceNotFoundError
+from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
 from app.repositories.customer import CustomerRepository
 from app.repositories.service import ServiceRepository
-from app.repositories.appointment import AppointmentRepository
 from app.schemas.appointment import (
     AppointmentCreate,
     AppointmentRescheduleRequest,
@@ -46,11 +46,27 @@ class PublicBookingService:
             id=business.id,
             name=business.name,
             timezone=business.timezone,
-            barbers=[PublicBarber(id=item.id, full_name=item.full_name) for item in barbers if item.is_active],
-            services=[PublicService(id=item.id, name=item.name, description=item.description, duration_minutes=item.duration_minutes, price_cents=item.price_cents) for item in services if item.is_active],
+            barbers=[
+                PublicBarber(id=item.id, full_name=item.full_name)
+                for item in barbers
+                if item.is_active
+            ],
+            services=[
+                PublicService(
+                    id=item.id,
+                    name=item.name,
+                    description=item.description,
+                    duration_minutes=item.duration_minutes,
+                    price_cents=item.price_cents,
+                )
+                for item in services
+                if item.is_active
+            ],
         )
 
-    async def create(self, business_id: UUID, payload: PublicBookingCreate) -> PublicBookingResponse:
+    async def create(
+        self, business_id: UUID, payload: PublicBookingCreate
+    ) -> PublicBookingResponse:
         business = await self._businesses.get_by_id(business_id)
         if business is None:
             raise ResourceNotFoundError("Business not found.")
@@ -60,14 +76,29 @@ class PublicBookingService:
             raise InvalidSchedulingReferenceError("Professional is not available.")
         if service is None or service.business_id != business_id or not service.is_active:
             raise InvalidSchedulingReferenceError("Service is not available.")
-        customer = await self._customers.get_by_business_and_phone(business_id, payload.customer_phone)
+        customer = await self._customers.get_by_business_and_phone(
+            business_id, payload.customer_phone
+        )
         if customer is None:
-            customer = await self._customers.create(business_id=business_id, full_name=payload.customer_name, phone=payload.customer_phone)
+            customer = await self._customers.create(
+                business_id=business_id,
+                full_name=payload.customer_name,
+                phone=payload.customer_phone,
+                notes=None,
+                birth_date=None,
+            )
             await self._session.flush()
         ends_at = payload.starts_at + timedelta(minutes=service.duration_minutes)
         appointment = await AppointmentService(self._session).create(
             business_id,
-            AppointmentCreate(barber_id=barber.id, customer_id=customer.id, service_id=service.id, starts_at=payload.starts_at, ends_at=ends_at, notes=payload.notes),
+            AppointmentCreate(
+                barber_id=barber.id,
+                customer_id=customer.id,
+                service_id=service.id,
+                starts_at=payload.starts_at,
+                ends_at=ends_at,
+                notes=payload.notes,
+            ),
         )
         return PublicBookingResponse(
             appointment=AppointmentResponse.model_validate(appointment),
@@ -84,7 +115,11 @@ class PublicBookingService:
             raise ResourceNotFoundError("Appointment not found.")
         business = await self._businesses.get_by_id(appointment.business_id)
         barber = await self._barbers.get_by_id(appointment.barber_id)
-        service = await self._services.get_by_id(appointment.service_id) if appointment.service_id else None
+        service = (
+            await self._services.get_by_id(appointment.service_id)
+            if appointment.service_id
+            else None
+        )
         if business is None or barber is None:
             raise ResourceNotFoundError("Appointment not found.")
         return PublicBookingSummary(

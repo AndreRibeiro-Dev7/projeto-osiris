@@ -16,11 +16,15 @@ class ServiceRepository:
         return await self._session.get(Service, service_id)
 
     async def get_by_name(self, business_id: UUID, name: str) -> Service | None:
-        result = await self._session.scalars(select(Service).where(Service.business_id == business_id, Service.name == name))
+        result = await self._session.scalars(
+            select(Service).where(Service.business_id == business_id, Service.name == name)
+        )
         return result.one_or_none()
 
     async def list_by_business(self, business_id: UUID) -> list[Service]:
-        result = await self._session.scalars(select(Service).where(Service.business_id == business_id).order_by(Service.name))
+        result = await self._session.scalars(
+            select(Service).where(Service.business_id == business_id).order_by(Service.name)
+        )
         return list(result.all())
 
     async def create(self, business_id: UUID, **values: object) -> Service:

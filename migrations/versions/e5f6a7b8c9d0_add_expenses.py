@@ -24,7 +24,12 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("amount_cents", sa.Integer(), nullable=False),
         sa.Column("occurred_on", sa.Date(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.CheckConstraint("amount_cents > 0", name="ck_expenses_positive_amount"),
         sa.ForeignKeyConstraint(["business_id"], ["businesses.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),

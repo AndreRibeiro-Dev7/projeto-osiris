@@ -106,9 +106,7 @@ class AppointmentService:
         if appointment is None:
             raise ResourceNotFoundError("Appointment not found.")
         if appointment.business_id != business_id:
-            raise InvalidSchedulingReferenceError(
-                "Appointment does not belong to this business."
-            )
+            raise InvalidSchedulingReferenceError("Appointment does not belong to this business.")
         appointment.notes = notes
         await self._session.commit()
         await self._session.refresh(appointment)
@@ -145,7 +143,9 @@ class AppointmentService:
             ends_at=ends_at,
             exclude_appointment_id=appointment.id,
         ):
-            raise SchedulingConflictError("The barber already has an appointment in this time range.")
+            raise SchedulingConflictError(
+                "The barber already has an appointment in this time range."
+            )
         appointment.barber_id = barber.id
         appointment.service_id = service.id
         appointment.price_cents = service.price_cents

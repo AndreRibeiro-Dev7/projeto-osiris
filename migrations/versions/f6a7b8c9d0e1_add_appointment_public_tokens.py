@@ -25,9 +25,7 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.create_unique_constraint(
-        "uq_appointments_public_token", "appointments", ["public_token"]
-    )
+    op.create_unique_constraint("uq_appointments_public_token", "appointments", ["public_token"])
     op.alter_column("appointments", "public_token", server_default=None)
 
 

@@ -82,12 +82,18 @@ def make_monday_schedule() -> BarberSchedule:
 
 def test_availability_excludes_slots_that_overlap_time_off() -> None:
     blocked = BarberTimeOff(
-        id=uuid4(), barber_id=BARBER_ID,
+        id=uuid4(),
+        barber_id=BARBER_ID,
         starts_at=datetime(2026, 9, 7, 12, 30, tzinfo=UTC),
-        ends_at=datetime(2026, 9, 7, 13, 0, tzinfo=UTC), reason="Almoço",
+        ends_at=datetime(2026, 9, 7, 13, 0, tzinfo=UTC),
+        reason="Almoço",
     )
     service = make_service(schedule=make_monday_schedule(), time_off=[blocked])
-    result = asyncio.run(service.list_available_slots(business_id=BUSINESS_ID, barber_id=BARBER_ID, appointment_date=MONDAY))
+    result = asyncio.run(
+        service.list_available_slots(
+            business_id=BUSINESS_ID, barber_id=BARBER_ID, appointment_date=MONDAY
+        )
+    )
     assert [slot.starts_at.hour for slot in result.slots] == [9, 10, 10]
 
 

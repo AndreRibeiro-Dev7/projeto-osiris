@@ -49,7 +49,9 @@ class Appointment(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    public_token: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), unique=True, nullable=False, default=uuid4)
+    public_token: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), unique=True, nullable=False, default=uuid4
+    )
     business_id: Mapped[UUID] = mapped_column(
         ForeignKey("businesses.id", ondelete="RESTRICT"), nullable=False
     )
@@ -59,10 +61,17 @@ class Appointment(Base):
     customer_id: Mapped[UUID] = mapped_column(
         ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False
     )
-    service_id: Mapped[UUID | None] = mapped_column(ForeignKey("services.id", ondelete="SET NULL"), nullable=True)
+    service_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("services.id", ondelete="SET NULL"), nullable=True
+    )
     price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     payment_method: Mapped[PaymentMethod | None] = mapped_column(
-        Enum(PaymentMethod, name="payment_method", values_callable=lambda enum_class: [member.value for member in enum_class]), nullable=True
+        Enum(
+            PaymentMethod,
+            name="payment_method",
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
+        nullable=True,
     )
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

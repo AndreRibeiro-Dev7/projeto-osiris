@@ -11,7 +11,7 @@ da versão implantada.
 
 - [ ] Revisar alterações pendentes e remover arquivos temporários.
 - [ ] Confirmar que nenhuma chave, senha ou dado pessoal está versionado.
-- [ ] Executar testes, lint, formatação e verificação de tipos.
+- [x] Executar testes, lint, formatação e verificação de tipos.
 - [x] Aplicar todas as migrações em um banco de homologação.
 - [ ] Criar uma versão identificável e documentar como fazer rollback.
 
@@ -77,6 +77,12 @@ da versão implantada.
 
 A evidência da revisão de autorização, das migrações e do teste com duas empresas
 está no [guia de autenticação](./authentication.md#resultado-da-homologação).
+
+Em 26 de outubro de 2026, após corrigir as pendências do job `quality`, foram
+aprovados localmente `ruff check .`, `black --check .`, `mypy app` (88 arquivos)
+e a suíte com 297 testes. O teste PostgreSQL optativo foi pulado nessa execução;
+sua homologação isolada está documentada no guia de autenticação. A aprovação
+do novo commit no GitHub Actions ainda deve ser conferida após a publicação.
 
 O Osiris pode ser considerado pronto para operação comercial quando os itens
 críticos de infraestrutura, segurança, backup, acesso, agenda e pagamentos

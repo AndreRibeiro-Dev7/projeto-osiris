@@ -13,6 +13,7 @@ from app.repositories.barber import BarberRepository
 from app.repositories.business import BusinessRepository
 from app.repositories.expense import ExpenseRepository
 from app.repositories.service import ServiceRepository
+from app.schemas.expense import ExpenseResponse
 from app.schemas.report import DailyFinancialPoint, FinancialReportResponse, RevenueBreakdown
 
 
@@ -40,7 +41,9 @@ class ReportService:
         barber_items = await self._barbers.list_by_business(business_id)
         barbers = {item.id: item.full_name for item in barber_items}
         commissions = {item.id: item.commission_percentage for item in barber_items}
-        services = {item.id: item.name for item in await self._services.list_by_business(business_id)}
+        services: dict[UUID | None, str] = {
+            item.id: item.name for item in await self._services.list_by_business(business_id)
+        }
         statuses = {status.value: 0 for status in AppointmentStatus}
         barber_totals: dict[UUID, list[int]] = {}
         service_totals: dict[UUID | None, list[int]] = {}
@@ -69,13 +72,37 @@ class ReportService:
             service_total = service_totals.setdefault(appointment.service_id, [0, 0])
             service_total[0] += amount
             service_total[1] += 1
-            payment = appointment.payment_method.value if appointment.payment_method else "not_informed"
+            payment = (
+                appointment.payment_method.value if appointment.payment_method else "not_informed"
+            )
             payment_total = payment_totals.setdefault(payment, [0, 0])
             payment_total[0] += amount
             payment_total[1] += 1
-        def rows(values: dict, labels: dict) -> list[RevenueBreakdown]:
-            return sorted([RevenueBreakdown(id=key if isinstance(key, UUID) else None, label=labels.get(key, "Não informado"), total_cents=value[0], appointments=value[1]) for key, value in values.items()], key=lambda item: item.total_cents, reverse=True)
-        payment_labels = {"pix": "Pix", "cash": "Dinheiro", "credit_card": "Crédito", "debit_card": "Débito", "not_informed": "Não informado"}
+
+        def rows[Key](
+            values: dict[Key, list[int]], labels: dict[Key, str]
+        ) -> list[RevenueBreakdown]:
+            return sorted(
+                [
+                    RevenueBreakdown(
+                        id=key if isinstance(key, UUID) else None,
+                        label=labels.get(key, "Não informado"),
+                        total_cents=value[0],
+                        appointments=value[1],
+                    )
+                    for key, value in values.items()
+                ],
+                key=lambda item: item.total_cents,
+                reverse=True,
+            )
+
+        payment_labels = {
+            "pix": "Pix",
+            "cash": "Dinheiro",
+            "credit_card": "Crédito",
+            "debit_card": "Débito",
+            "not_informed": "Não informado",
+        }
         barber_rows = rows(barber_totals, barbers)
         for row in barber_rows:
             percentage = commissions.get(row.id, 0) if row.id else 0
@@ -88,19 +115,26 @@ class ReportService:
         completed = statuses["completed"]
         attendance_base = completed + statuses["no_show"]
         return FinancialReportResponse(
-            date_from=date_from, date_to=date_to, total_revenue_cents=revenue,
+            date_from=date_from,
+            date_to=date_to,
+            total_revenue_cents=revenue,
             total_commission_cents=total_commission,
             net_revenue_cents=revenue - total_commission,
             total_expenses_cents=total_expenses,
             final_result_cents=revenue - total_commission - total_expenses,
             average_ticket_cents=revenue // completed if completed else 0,
-            attendance_rate_percent=round(completed / attendance_base * 100) if attendance_base else 0,
-            completed=completed, scheduled=statuses["scheduled"],
-            confirmed=statuses["confirmed"], cancelled=statuses["cancelled"],
-            no_show=statuses["no_show"], by_barber=barber_rows,
+            attendance_rate_percent=(
+                round(completed / attendance_base * 100) if attendance_base else 0
+            ),
+            completed=completed,
+            scheduled=statuses["scheduled"],
+            confirmed=statuses["confirmed"],
+            cancelled=statuses["cancelled"],
+            no_show=statuses["no_show"],
+            by_barber=barber_rows,
             by_service=rows(service_totals, services),
             by_payment_method=rows(payment_totals, payment_labels),
-            expenses=expenses,
+            expenses=[ExpenseResponse.model_validate(expense) for expense in expenses],
             daily=[
                 DailyFinancialPoint(
                     date=day,

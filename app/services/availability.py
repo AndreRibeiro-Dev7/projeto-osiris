@@ -12,6 +12,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
 )
 from app.models.barber_schedule import BarberSchedule
+from app.models.barber_time_off import BarberTimeOff
 from app.repositories.appointment import AppointmentRepository
 from app.repositories.barber import BarberRepository
 from app.repositories.barber_schedule import BarberScheduleRepository
@@ -38,14 +39,21 @@ class AvailabilityService:
         self._time_off = BarberTimeOffRepository(session)
         self._closures = BusinessClosureRepository(session)
 
-    async def create_time_off(self, *, business_id: UUID, barber_id: UUID, payload: BarberTimeOffCreate):
+    async def create_time_off(
+        self, *, business_id: UUID, barber_id: UUID, payload: BarberTimeOffCreate
+    ) -> BarberTimeOff:
         await self._validate_barber(business_id, barber_id, require_active=False)
-        item = await self._time_off.create(barber_id=barber_id, starts_at=payload.starts_at, ends_at=payload.ends_at, reason=payload.reason)
+        item = await self._time_off.create(
+            barber_id=barber_id,
+            starts_at=payload.starts_at,
+            ends_at=payload.ends_at,
+            reason=payload.reason,
+        )
         await self._session.commit()
         await self._session.refresh(item)
         return item
 
-    async def list_time_off(self, *, business_id: UUID, barber_id: UUID):
+    async def list_time_off(self, *, business_id: UUID, barber_id: UUID) -> list[BarberTimeOff]:
         await self._validate_barber(business_id, barber_id, require_active=False)
         return await self._time_off.list_for_barber(barber_id)
 
@@ -74,16 +82,12 @@ class AvailabilityService:
         await self._session.refresh(schedule)
         return schedule
 
-    async def list_schedules(
-        self, *, business_id: UUID, barber_id: UUID
-    ) -> list[BarberSchedule]:
+    async def list_schedules(self, *, business_id: UUID, barber_id: UUID) -> list[BarberSchedule]:
         """Return the recurring weekly schedule for one barber."""
         await self._validate_barber(business_id, barber_id, require_active=False)
         return await self._schedules.list_for_barber(barber_id)
 
-    async def delete_schedule(
-        self, *, business_id: UUID, barber_id: UUID, weekday: int
-    ) -> None:
+    async def delete_schedule(self, *, business_id: UUID, barber_id: UUID, weekday: int) -> None:
         """Remove a recurring workday from a barber's schedule."""
         await self._validate_barber(business_id, barber_id, require_active=False)
         await self._schedules.delete(barber_id, weekday)
@@ -103,7 +107,13 @@ class AvailabilityService:
         await self._validate_barber(business_id, barber_id, require_active=True)
 
         if await self._closures.get_for_date(business_id, appointment_date):
-            return AvailabilityResponse(business_id=business_id, barber_id=barber_id, appointment_date=appointment_date, timezone=business.timezone, slots=[])
+            return AvailabilityResponse(
+                business_id=business_id,
+                barber_id=barber_id,
+                appointment_date=appointment_date,
+                timezone=business.timezone,
+                slots=[],
+            )
 
         schedule = await self._schedules.get(barber_id, appointment_date.weekday())
         if schedule is None:
@@ -128,8 +138,16 @@ class AvailabilityService:
         )
 
         slot_length = timedelta(minutes=schedule.slot_duration_minutes)
-        break_starts_at = datetime.combine(appointment_date, schedule.break_starts_at, tzinfo=timezone) if schedule.break_starts_at else None
-        break_ends_at = datetime.combine(appointment_date, schedule.break_ends_at, tzinfo=timezone) if schedule.break_ends_at else None
+        break_starts_at = (
+            datetime.combine(appointment_date, schedule.break_starts_at, tzinfo=timezone)
+            if schedule.break_starts_at
+            else None
+        )
+        break_ends_at = (
+            datetime.combine(appointment_date, schedule.break_ends_at, tzinfo=timezone)
+            if schedule.break_ends_at
+            else None
+        )
         slots: list[AvailabilitySlot] = []
         starts_at = work_starts_at
         while starts_at + slot_length <= work_ends_at:
@@ -139,10 +157,14 @@ class AvailabilityService:
                 for appointment in appointments
             )
             time_off_conflict = any(
-                item.starts_at < ends_at and item.ends_at > starts_at
-                for item in time_off_periods
+                item.starts_at < ends_at and item.ends_at > starts_at for item in time_off_periods
             )
-            break_conflict = bool(break_starts_at and break_ends_at and break_starts_at < ends_at and break_ends_at > starts_at)
+            break_conflict = bool(
+                break_starts_at
+                and break_ends_at
+                and break_starts_at < ends_at
+                and break_ends_at > starts_at
+            )
             if not appointment_conflict and not time_off_conflict and not break_conflict:
                 slots.append(AvailabilitySlot(starts_at=starts_at, ends_at=ends_at))
             starts_at = ends_at

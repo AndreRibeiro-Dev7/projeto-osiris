@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import builtins
 from calendar import monthrange
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,9 +42,7 @@ class ExpenseService:
         await self._expenses.delete(expense)
         await self._session.commit()
 
-    async def update(
-        self, business_id: UUID, expense_id: UUID, payload: ExpenseUpdate
-    ) -> Expense:
+    async def update(self, business_id: UUID, expense_id: UUID, payload: ExpenseUpdate) -> Expense:
         expense = await self._expenses.get_by_id(expense_id)
         if expense is None or expense.business_id != business_id:
             raise ResourceNotFoundError("Expense not found.")
@@ -58,7 +57,7 @@ class ExpenseService:
         if expense is None or expense.business_id != business_id:
             raise ResourceNotFoundError("Expense not found.")
         expense.is_paid = True
-        expense.paid_at = datetime.now(timezone.utc)
+        expense.paid_at = datetime.now(UTC)
         await self._session.commit()
         await self._session.refresh(expense)
         return expense
@@ -75,13 +74,11 @@ class ExpenseService:
 
     async def generate_fixed_for_month(
         self, business_id: UUID, target_month: date
-    ) -> list[Expense]:
+    ) -> builtins.list[Expense]:
         if await self._businesses.get_by_id(business_id) is None:
             raise ResourceNotFoundError("Business not found.")
         target_start = target_month.replace(day=1)
-        target_end = target_start.replace(
-            day=monthrange(target_start.year, target_start.month)[1]
-        )
+        target_end = target_start.replace(day=monthrange(target_start.year, target_start.month)[1])
         previous_end = target_start - timedelta(days=1)
         previous_start = previous_end.replace(day=1)
         sources = [
@@ -91,22 +88,18 @@ class ExpenseService:
             )
             if item.is_fixed
         ]
-        existing = await self._expenses.list_by_range(
-            business_id, target_start, target_end
-        )
+        existing = await self._expenses.list_by_range(business_id, target_start, target_end)
         existing_keys = {
             (item.category, item.description.casefold(), item.amount_cents)
             for item in existing
             if item.is_fixed
         }
-        created: list[Expense] = []
+        created: builtins.list[Expense] = []
         for source in sources:
             key = (source.category, source.description.casefold(), source.amount_cents)
             if key in existing_keys:
                 continue
-            occurred_on = target_start.replace(
-                day=min(source.occurred_on.day, target_end.day)
-            )
+            occurred_on = target_start.replace(day=min(source.occurred_on.day, target_end.day))
             created.append(
                 await self._expenses.create(
                     business_id,

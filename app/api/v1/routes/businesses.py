@@ -24,8 +24,12 @@ from app.core.exceptions import (
 )
 from app.database.session import get_db_session
 from app.integrations.customer_workbook import build_customer_workbook
-from app.integrations.openai_responses import OpenAIResponsesClient
 from app.integrations.financial_workbook import build_financial_workbook
+from app.integrations.openai_responses import OpenAIResponsesClient
+from app.models.appointment import AppointmentStatus
+from app.repositories.appointment import AppointmentRepository
+from app.repositories.business import BusinessRepository
+from app.repositories.business_closure import BusinessClosureRepository
 from app.schemas.appointment import (
     AppointmentCompleteRequest,
     AppointmentCreate,
@@ -43,17 +47,13 @@ from app.schemas.availability import (
 )
 from app.schemas.barber import BarberCreate, BarberResponse, BarberUpdate
 from app.schemas.business import BusinessCreate, BusinessResponse, BusinessUpdate
+from app.schemas.closure import BusinessClosureCreate, BusinessClosureResponse
 from app.schemas.customer import (
     CustomerCreate,
     CustomerPortfolioEntry,
     CustomerResponse,
     CustomerUpdate,
 )
-from app.schemas.closure import BusinessClosureCreate, BusinessClosureResponse
-from app.repositories.business_closure import BusinessClosureRepository
-from app.repositories.appointment import AppointmentRepository
-from app.repositories.business import BusinessRepository
-from app.models.appointment import AppointmentStatus
 from app.schemas.error import ErrorResponse
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
 from app.schemas.report import FinancialReportResponse
@@ -70,28 +70,73 @@ from app.services.service import ServiceCatalogService
 
 router = APIRouter(prefix="/businesses")
 
-@router.get("/{business_id}/closures", response_model=list[BusinessClosureResponse], dependencies=[Depends(require_business_access)])
-async def list_business_closures(business_id: UUID, session: AsyncSession = Depends(get_db_session)) -> list[BusinessClosureResponse]:
+
+@router.get(
+    "/{business_id}/closures",
+    response_model=list[BusinessClosureResponse],
+    dependencies=[Depends(require_business_access)],
+)
+async def list_business_closures(
+    business_id: UUID, session: AsyncSession = Depends(get_db_session)
+) -> list[BusinessClosureResponse]:
     items = await BusinessClosureRepository(session).list(business_id)
     return [BusinessClosureResponse.model_validate(item) for item in items]
 
-@router.post("/{business_id}/closures", response_model=BusinessClosureResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_business_access)])
-async def create_business_closure(business_id: UUID, payload: BusinessClosureCreate, session: AsyncSession = Depends(get_db_session)) -> BusinessClosureResponse:
+
+@router.post(
+    "/{business_id}/closures",
+    response_model=BusinessClosureResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_business_access)],
+)
+async def create_business_closure(
+    business_id: UUID,
+    payload: BusinessClosureCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> BusinessClosureResponse:
     repository = BusinessClosureRepository(session)
     existing = await repository.get_for_date(business_id, payload.closure_date)
-    if existing: raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This date is already closed.")
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="This date is already closed."
+        )
     business = await BusinessRepository(session).get_by_id(business_id)
-    if business is None: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
-    timezone = ZoneInfo(business.timezone); starts_at = datetime.combine(payload.closure_date, time.min, tzinfo=timezone); ends_at = starts_at + timedelta(days=1)
-    appointments = await AppointmentRepository(session).list_by_business_range(business_id=business_id, starts_at=starts_at, ends_at=ends_at)
-    active_count = sum(item.status in {AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED} for item in appointments)
-    if active_count: raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"There are {active_count} active appointments on this date. Reschedule or cancel them first.")
-    item = await repository.create(business_id, payload.closure_date, payload.reason); await session.commit(); await session.refresh(item)
+    if business is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found.")
+    timezone = ZoneInfo(business.timezone)
+    starts_at = datetime.combine(payload.closure_date, time.min, tzinfo=timezone)
+    ends_at = starts_at + timedelta(days=1)
+    appointments = await AppointmentRepository(session).list_by_business_range(
+        business_id=business_id, starts_at=starts_at, ends_at=ends_at
+    )
+    active_count = sum(
+        item.status in {AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED}
+        for item in appointments
+    )
+    if active_count:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"There are {active_count} active appointments on this date. "
+                "Reschedule or cancel them first."
+            ),
+        )
+    item = await repository.create(business_id, payload.closure_date, payload.reason)
+    await session.commit()
+    await session.refresh(item)
     return BusinessClosureResponse.model_validate(item)
 
-@router.delete("/{business_id}/closures/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_business_access)])
-async def delete_business_closure(business_id: UUID, item_id: UUID, session: AsyncSession = Depends(get_db_session)) -> None:
-    if not await BusinessClosureRepository(session).delete(business_id, item_id): raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Closure not found.")
+
+@router.delete(
+    "/{business_id}/closures/{item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_business_access)],
+)
+async def delete_business_closure(
+    business_id: UUID, item_id: UUID, session: AsyncSession = Depends(get_db_session)
+) -> None:
+    if not await BusinessClosureRepository(session).delete(business_id, item_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Closure not found.")
     await session.commit()
 
 
@@ -127,7 +172,10 @@ async def list_expenses(
 ) -> list[ExpenseResponse]:
     """List expenses recorded within a date range."""
     if date_to < date_from:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="The end date must be on or after the start date.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The end date must be on or after the start date.",
+        )
     try:
         expenses = await ExpenseService(session).list(business_id, date_from, date_to)
         return [ExpenseResponse.model_validate(item) for item in expenses]
@@ -223,9 +271,7 @@ async def generate_fixed_expenses(
 ) -> list[ExpenseResponse]:
     """Copy fixed expenses from the previous month without duplicates."""
     try:
-        expenses = await ExpenseService(session).generate_fixed_for_month(
-            business_id, target_month
-        )
+        expenses = await ExpenseService(session).generate_fixed_for_month(business_id, target_month)
         return [ExpenseResponse.model_validate(item) for item in expenses]
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -267,7 +313,10 @@ async def export_financial_report(
 ) -> StreamingResponse:
     """Download a formatted Excel financial report."""
     if date_to < date_from:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="The end date must be on or after the start date.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The end date must be on or after the start date.",
+        )
     try:
         business = await BusinessService(session).get(business_id)
         report = await ReportService(session).financial(business_id, date_from, date_to)
@@ -482,9 +531,7 @@ async def update_customer(
 ) -> CustomerResponse:
     """Update a customer's name and phone number."""
     try:
-        customer = await CustomerService(session).update(
-            business_id, customer_id, payload
-        )
+        customer = await CustomerService(session).update(business_id, customer_id, payload)
         return CustomerResponse.model_validate(customer)
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -524,9 +571,7 @@ async def get_customer_appointment_history(
 ) -> list[AppointmentResponse]:
     """Return the complete appointment history for one customer."""
     try:
-        appointments = await CustomerService(session).appointment_history(
-            business_id, customer_id
-        )
+        appointments = await CustomerService(session).appointment_history(business_id, customer_id)
         return [AppointmentResponse.model_validate(item) for item in appointments]
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -636,7 +681,9 @@ async def update_appointment_notes(
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except InvalidSchedulingReferenceError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)
+        ) from error
 
 
 @router.patch(
@@ -786,9 +833,13 @@ async def delete_barber_schedule(
     response_model=list[BarberTimeOffResponse],
     dependencies=[Depends(require_business_access)],
 )
-async def list_barber_time_off(business_id: UUID, barber_id: UUID, session: AsyncSession = Depends(get_db_session)) -> list[BarberTimeOffResponse]:
+async def list_barber_time_off(
+    business_id: UUID, barber_id: UUID, session: AsyncSession = Depends(get_db_session)
+) -> list[BarberTimeOffResponse]:
     try:
-        items = await AvailabilityService(session).list_time_off(business_id=business_id, barber_id=barber_id)
+        items = await AvailabilityService(session).list_time_off(
+            business_id=business_id, barber_id=barber_id
+        )
         return [BarberTimeOffResponse.model_validate(item) for item in items]
     except (ResourceNotFoundError, InvalidSchedulingReferenceError) as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -800,9 +851,16 @@ async def list_barber_time_off(business_id: UUID, barber_id: UUID, session: Asyn
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_business_access)],
 )
-async def create_barber_time_off(business_id: UUID, barber_id: UUID, payload: BarberTimeOffCreate, session: AsyncSession = Depends(get_db_session)) -> BarberTimeOffResponse:
+async def create_barber_time_off(
+    business_id: UUID,
+    barber_id: UUID,
+    payload: BarberTimeOffCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> BarberTimeOffResponse:
     try:
-        item = await AvailabilityService(session).create_time_off(business_id=business_id, barber_id=barber_id, payload=payload)
+        item = await AvailabilityService(session).create_time_off(
+            business_id=business_id, barber_id=barber_id, payload=payload
+        )
         return BarberTimeOffResponse.model_validate(item)
     except (ResourceNotFoundError, InvalidSchedulingReferenceError) as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -813,9 +871,16 @@ async def create_barber_time_off(business_id: UUID, barber_id: UUID, payload: Ba
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_business_access)],
 )
-async def delete_barber_time_off(business_id: UUID, barber_id: UUID, item_id: UUID, session: AsyncSession = Depends(get_db_session)) -> None:
+async def delete_barber_time_off(
+    business_id: UUID,
+    barber_id: UUID,
+    item_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
     try:
-        await AvailabilityService(session).delete_time_off(business_id=business_id, barber_id=barber_id, item_id=item_id)
+        await AvailabilityService(session).delete_time_off(
+            business_id=business_id, barber_id=barber_id, item_id=item_id
+        )
     except (ResourceNotFoundError, InvalidSchedulingReferenceError) as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 

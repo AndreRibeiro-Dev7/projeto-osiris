@@ -1,8 +1,10 @@
 """Database queries for recurring barber schedules."""
 
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import delete, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.barber_schedule import BarberSchedule
@@ -62,4 +64,4 @@ class BarberScheduleRepository:
                 BarberSchedule.weekday == weekday,
             )
         )
-        return bool(result.rowcount)
+        return bool(cast(CursorResult[Any], result).rowcount)

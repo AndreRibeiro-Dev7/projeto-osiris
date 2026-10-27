@@ -261,11 +261,7 @@ class AuthService:
             )
         if user.role == "barber":
             barber = await self._barbers.get_by_id(user.barber_id) if user.barber_id else None
-            if (
-                barber is None
-                or not barber.is_active
-                or barber.business_id != user.business_id
-            ):
+            if barber is None or not barber.is_active or barber.business_id != user.business_id:
                 return None
         if not verify_password(password, user.password_hash):
             user.login_failed_attempts += 1

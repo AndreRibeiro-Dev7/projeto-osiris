@@ -25,7 +25,12 @@ def upgrade() -> None:
         sa.Column("duration_minutes", sa.Integer(), nullable=False),
         sa.Column("price_cents", sa.Integer(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.CheckConstraint("duration_minutes BETWEEN 5 AND 480", name="ck_services_duration"),
         sa.CheckConstraint("price_cents >= 0", name="ck_services_price"),
         sa.ForeignKeyConstraint(["business_id"], ["businesses.id"], ondelete="CASCADE"),
@@ -34,7 +39,14 @@ def upgrade() -> None:
     )
     op.add_column("appointments", sa.Column("service_id", sa.Uuid(), nullable=True))
     op.add_column("appointments", sa.Column("price_cents", sa.Integer(), nullable=True))
-    op.create_foreign_key("fk_appointments_service_id", "appointments", "services", ["service_id"], ["id"], ondelete="SET NULL")
+    op.create_foreign_key(
+        "fk_appointments_service_id",
+        "appointments",
+        "services",
+        ["service_id"],
+        ["id"],
+        ondelete="SET NULL",
+    )
 
 
 def downgrade() -> None:

@@ -7,11 +7,13 @@ from zoneinfo import ZoneInfo
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.schemas.customer import CustomerPortfolioEntry
 
 INK, GOLD, PAPER, WHITE, SOFT = "101418", "C98B3C", "F4F1EB", "FFFFFF", "697178"
-CURRENCY = 'R$ #,##0.00;[Red]-R$ #,##0.00;–'
+CURRENCY = "R$ #,##0.00;[Red]-R$ #,##0.00;–"
+type CellValue = str | int | float | datetime | None
 
 
 def build_customer_workbook(
@@ -22,13 +24,16 @@ def build_customer_workbook(
     """Return a polished, single-sheet customer portfolio as XLSX bytes."""
     workbook = Workbook()
     sheet = workbook.active
+    assert isinstance(sheet, Worksheet)
     sheet.title = "Clientes"
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "B14"
+    assert sheet.sheet_properties.pageSetUpPr is not None
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
     sheet.sheet_properties.tabColor = GOLD
+    assert sheet.oddHeader is not None and sheet.oddFooter is not None
     sheet.oddHeader.center.text = "&BProjeto Osiris — Carteira de clientes"
     sheet.oddFooter.center.text = "Página &P de &N"
 
@@ -60,11 +65,9 @@ def build_customer_workbook(
         (6, "Faltas", total_no_show, "#,##0"),
         (8, "Total gasto", total_spent, CURRENCY),
     ]
-    for column, label, value, number_format in cards:
-        sheet.cell(7, column, label).font = Font(
-            name="Aptos", size=9, bold=True, color=SOFT
-        )
-        cell = sheet.cell(8, column, value)
+    for column, label, metric_value, number_format in cards:
+        sheet.cell(7, column, label).font = Font(name="Aptos", size=9, bold=True, color=SOFT)
+        cell = sheet.cell(8, column, metric_value)
         cell.number_format = number_format
         cell.font = Font(name="Aptos Display", size=14, bold=True, color=INK)
 
@@ -92,9 +95,9 @@ def build_customer_workbook(
         cell.font = Font(name="Aptos", size=9, bold=True, color=WHITE)
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    data = customers or [None]
+    data: list[CustomerPortfolioEntry | None] = list(customers) or [None]
     for row_number, customer in enumerate(data, start=13):
-        values = (
+        values: list[CellValue] = (
             ["Nenhum cliente cadastrado", "", None, 0, 0, 0, 0, None]
             if customer is None
             else [
@@ -105,13 +108,15 @@ def build_customer_workbook(
                 customer.completed,
                 customer.no_show,
                 customer.total_spent_cents / 100,
-                customer.last_visit_at.astimezone(local_timezone).replace(tzinfo=None)
-                if customer.last_visit_at
-                else None,
+                (
+                    customer.last_visit_at.astimezone(local_timezone).replace(tzinfo=None)
+                    if customer.last_visit_at
+                    else None
+                ),
             ]
         )
-        for column, value in enumerate(values, start=2):
-            cell = sheet.cell(row_number, column, value)
+        for column, cell_value in enumerate(values, start=2):
+            cell = sheet.cell(row_number, column, cell_value)
             cell.font = Font(name="Aptos", size=10, color=INK)
             cell.fill = PatternFill("solid", fgColor=WHITE if row_number % 2 else PAPER)
             cell.alignment = Alignment(

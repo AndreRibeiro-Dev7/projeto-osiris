@@ -114,10 +114,10 @@ class AppointmentRepository:
     ) -> bool:
         """Return whether an active appointment overlaps the requested time range."""
         statement = select(Appointment.id).where(
-                Appointment.barber_id == barber_id,
-                Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]),
-                Appointment.starts_at < ends_at,
-                Appointment.ends_at > starts_at,
+            Appointment.barber_id == barber_id,
+            Appointment.status.in_([AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED]),
+            Appointment.starts_at < ends_at,
+            Appointment.ends_at > starts_at,
         )
         if exclude_appointment_id is not None:
             statement = statement.where(Appointment.id != exclude_appointment_id)

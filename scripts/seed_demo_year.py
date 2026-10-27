@@ -179,9 +179,11 @@ async def seed(apply: bool, business_id: str | None) -> None:
                     status = (
                         AppointmentStatus.NO_SHOW
                         if status_roll == 18
-                        else AppointmentStatus.CANCELLED
-                        if status_roll == 19
-                        else AppointmentStatus.COMPLETED
+                        else (
+                            AppointmentStatus.CANCELLED
+                            if status_roll == 19
+                            else AppointmentStatus.COMPLETED
+                        )
                     )
                     price = service.price_cents + (
                         500 if month in {6, 7, 12} and status == AppointmentStatus.COMPLETED else 0
@@ -194,12 +196,16 @@ async def seed(apply: bool, business_id: str | None) -> None:
                         ].id,
                         service_id=service.id,
                         price_cents=price,
-                        payment_method=payment_methods[(sequence + month) % len(payment_methods)]
-                        if status == AppointmentStatus.COMPLETED
-                        else None,
-                        paid_at=(starts_at + timedelta(minutes=service.duration_minutes))
-                        if status == AppointmentStatus.COMPLETED
-                        else None,
+                        payment_method=(
+                            payment_methods[(sequence + month) % len(payment_methods)]
+                            if status == AppointmentStatus.COMPLETED
+                            else None
+                        ),
+                        paid_at=(
+                            (starts_at + timedelta(minutes=service.duration_minutes))
+                            if status == AppointmentStatus.COMPLETED
+                            else None
+                        ),
                         starts_at=starts_at,
                         ends_at=starts_at + timedelta(minutes=service.duration_minutes),
                         status=status,
@@ -238,9 +244,11 @@ async def seed(apply: bool, business_id: str | None) -> None:
                         occurred_on=date(YEAR, month, min(day * 2, 25)),
                         is_fixed=is_fixed,
                         is_paid=paid,
-                        paid_at=datetime(YEAR, month, min(day * 2, 25), 15, tzinfo=UTC)
-                        if paid
-                        else None,
+                        paid_at=(
+                            datetime(YEAR, month, min(day * 2, 25), 15, tzinfo=UTC)
+                            if paid
+                            else None
+                        ),
                     )
                 )
                 expense_total += 1
