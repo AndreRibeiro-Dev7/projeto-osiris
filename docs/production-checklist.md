@@ -59,7 +59,8 @@ da versão implantada.
 - [ ] Testar cadastro, login, logout e recuperação de acesso.
 - [ ] Testar agenda, conflitos, folgas, cancelamento e reagendamento.
 - [x] Testar o fluxo HTTP de agendamento público com PostgreSQL real.
-- [ ] Testar o fluxo completo do assistente.
+- [x] Testar a orquestração do assistente com PostgreSQL real e modelo simulado.
+- [ ] Testar interpretação e respostas do assistente com o provedor real de IA.
 - [ ] Testar pagamentos, comissões, despesas, metas e relatórios.
 - [ ] Testar interface em celular, tablet e computador.
 - [x] Testar isolamento com duas empresas diferentes.

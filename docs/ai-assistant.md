@@ -96,3 +96,15 @@ configurado. A homologação só deve ser marcada após a execução com Postgre
 Essa verificação não comprova a interpretação de mensagens pelo modelo real,
 suas respostas em linguagem natural nem a disponibilidade da conta no provedor.
 Essa etapa requer uma validação separada com o provedor configurado.
+
+### Resultado da homologação com modelo simulado
+
+Em 26 de outubro de 2026, o proprietário executou o programa no PowerShell e
+apresentou a saída completa: `3 passed in 7.81s`. Todas as migrações foram
+aplicadas no PostgreSQL temporário. Passaram os cenários de isolamento,
+agendamento público e assistente com modelo simulado, incluindo confirmação,
+repetição concorrente, rollback e indisponibilidade.
+
+O programa confirmou a remoção do container e do banco temporários, sem criação
+de volumes. Essa execução valida a orquestração e a persistência do assistente;
+a interpretação e a geração de respostas com o provedor real continuam pendentes.
