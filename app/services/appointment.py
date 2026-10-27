@@ -35,7 +35,9 @@ class AppointmentService:
         self._customers = CustomerRepository(session)
         self._services = ServiceRepository(session)
 
-    async def create(self, business_id: UUID, payload: AppointmentCreate) -> Appointment:
+    async def create(
+        self, business_id: UUID, payload: AppointmentCreate, *, commit: bool = True
+    ) -> Appointment:
         """Create an appointment when all references and the time range are valid."""
         business = await self._businesses.get_by_id(business_id)
         if business is None:
@@ -87,8 +89,11 @@ class AppointmentService:
             ends_at=payload.ends_at,
             notes=payload.notes,
         )
-        await self._session.commit()
-        await self._session.refresh(appointment)
+        if commit:
+            await self._session.commit()
+            await self._session.refresh(appointment)
+        else:
+            await self._session.flush()
         return appointment
 
     async def get(self, appointment_id: UUID) -> Appointment:

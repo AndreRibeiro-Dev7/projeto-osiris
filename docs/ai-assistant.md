@@ -64,3 +64,35 @@ confirmação é idempotente e devolve o agendamento já criado.
 
 Sem `OPENAI_API_KEY`, a rota retorna `503 Service Unavailable`. Se o provedor não
 responder, retorna `502 Bad Gateway` sem expor detalhes internos.
+
+## Homologação automatizada do fluxo
+
+Execute com o Docker Desktop aberto, no ambiente Python do projeto:
+
+```powershell
+.\.venv-codex\Scripts\python.exe .\scripts\test_tenant_isolation.py
+```
+
+O programa executa três cenários em PostgreSQL temporário: isolamento entre
+empresas, agendamento público e fluxo do assistente. O cenário do assistente usa
+login, JWT, rotas, serviços, bloqueios de linha e persistência reais. Somente o
+cliente do provedor de IA é substituído por respostas controladas, sem chamadas
+externas nem consumo de créditos.
+
+São verificados consulta de horários, cliente obrigatório, proposta sem reserva,
+ausência de confirmação, confirmação repetida em paralelo, bloqueio posterior
+por folga ou outra reserva, falha simulada do provedor e rollback diante de uma
+interrupção na gravação. Uma reserva e seu vínculo com a conversa são salvos na
+mesma transação; repetir a confirmação retorna a reserva já vinculada.
+
+A confirmação bloqueia a conversa e o profissional, e reconsulta os horários
+disponíveis antes de criar a reserva. Uma proposta que deixou de caber na agenda
+retorna `409 Conflict`.
+
+O job `tenant-isolation` do GitHub Actions executa os mesmos cenários. A suíte
+local comum pula os testes de integração quando o banco temporário não foi
+configurado. A homologação só deve ser marcada após a execução com PostgreSQL.
+
+Essa verificação não comprova a interpretação de mensagens pelo modelo real,
+suas respostas em linguagem natural nem a disponibilidade da conta no provedor.
+Essa etapa requer uma validação separada com o provedor configurado.

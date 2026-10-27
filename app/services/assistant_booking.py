@@ -5,10 +5,15 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import InvalidSchedulingReferenceError, ResourceNotFoundError
+from app.core.exceptions import (
+    InvalidSchedulingReferenceError,
+    ResourceNotFoundError,
+    SchedulingConflictError,
+)
 from app.models.appointment import Appointment
 from app.models.assistant_conversation import AssistantConversation
 from app.repositories.assistant_conversation import AssistantConversationRepository
+from app.repositories.barber import BarberRepository
 from app.repositories.customer import CustomerRepository
 from app.schemas.appointment import AppointmentCreate
 from app.services.appointment import AppointmentService
@@ -24,6 +29,7 @@ class AssistantBookingService:
         self._appointments = AppointmentService(session)
         self._conversations = AssistantConversationRepository(session)
         self._customers = CustomerRepository(session)
+        self._barbers = BarberRepository(session)
 
     async def propose(
         self,
@@ -86,6 +92,20 @@ class AssistantBookingService:
         if conversation.appointment_id is not None:
             return await self._appointments.get(conversation.appointment_id)
 
+        # Serialize reservations for this professional while checking the current schedule.
+        await self._barbers.get_by_id_for_update(barber_id)
+        availability = await self._availability.list_available_slots(
+            business_id=business_id,
+            barber_id=barber_id,
+            appointment_date=conversation.appointment_date,
+        )
+        if not any(
+            slot.starts_at == conversation.proposed_starts_at
+            and slot.ends_at == conversation.proposed_ends_at
+            for slot in availability.slots
+        ):
+            raise SchedulingConflictError("The proposed time is no longer available.")
+
         appointment = await self._appointments.create(
             business_id,
             AppointmentCreate(
@@ -95,6 +115,7 @@ class AssistantBookingService:
                 ends_at=conversation.proposed_ends_at,
                 notes="Agendamento criado pelo assistente.",
             ),
+            commit=False,
         )
         conversation.appointment_id = appointment.id
         await self._session.commit()

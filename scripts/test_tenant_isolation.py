@@ -114,6 +114,10 @@ def main() -> int:
             "Fluxo publico validado: cliente novo, conflito, "
             "confirmacao, reagendamento e cancelamento."
         )
+        print(
+            "Assistente validado com modelo simulado: confirmacao, "
+            "repeticao concorrente, rollback e indisponibilidade."
+        )
         return 0
     finally:
         if created:
