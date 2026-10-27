@@ -86,5 +86,13 @@ em PostgreSQL isolado: migração, concorrência de consumo do código, isolamen
 telefone e barbearia, filtro de reservas e invalidação após falha de envio.
 O GitHub Actions executa o mesmo conjunto com PostgreSQL de serviço.
 
+Em 27/10/2026, André executou o script local com Docker: as migrações foram
+aplicadas até `4e5f6a7b8c9d` e os quatro testes de integração passaram em 5,53 s.
+Foram validados isolamento entre empresas, recuperação por WhatsApp com envio
+simulado, ciclo do agendamento público e assistente com modelo simulado.
+O script confirmou a remoção do container e banco temporários, sem criar volumes.
+Essa execução valida o fluxo persistente de recuperação; não comprova entrega
+de mensagens reais nem aprovação do modelo na Meta.
+
 O teste real de entrega na Meta e a aprovação do modelo permanecem pendentes até
 configurar a conta. Não habilite o recurso apenas porque os testes simulados passaram.
