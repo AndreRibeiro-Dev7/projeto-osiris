@@ -132,3 +132,18 @@ Para validar depois do deploy:
 
 O item correspondente do checklist só deve ser marcado depois dessa validação
 no ambiente publicado.
+
+### Validação em produção
+
+Em 26 de outubro de 2026, os logs do Render apresentados pelo proprietário
+confirmaram as duas categorias na versão de métricas publicada:
+
+- `financial_report_generated`, categoria `financial`, com HTTP 200 e resultado
+  `success` ao consultar o relatório financeiro;
+- `appointment_confirmed`, categoria `scheduling`, com HTTP 200, resultado
+  `success` e duração de 36,49 ms ao confirmar um atendimento.
+
+Os eventos exibiram `metric_value=1` e modelos de rota com parâmetros
+anonimizados, sem identificadores reais ou valores financeiros. Essa evidência
+valida o registro das métricas nas duas categorias; não representa uma
+homologação completa de todas as operações financeiras e de agenda.

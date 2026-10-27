@@ -48,7 +48,7 @@ ser marcado quando tiver sido executado e validado no ambiente de produção.
 - [x] Validar abertura e recuperação do alerta com uma falha controlada.
 - [x] Monitorar disponibilidade, latência, erros e conexões com o banco.
 - [x] Criar alertas para falhas de login, e-mail, IA e integrações.
-- [ ] Registrar métricas de agendamento e tarefas financeiras críticas.
+- [x] Registrar métricas de agendamento e tarefas financeiras críticas.
 - [x] Documentar procedimento de incidente e canais de suporte.
 
 ## 6. Testes antes do lançamento
