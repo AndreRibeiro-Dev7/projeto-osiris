@@ -151,7 +151,25 @@ de integração passaram em 9,74 segundos**, incluindo o novo cenário
 solicitação concorrente de recuperação, cinco códigos errados, consumo concorrente
 de código válido, revogação de tokens e desativação/reativação de contas e perfil.
 O envio de e-mail é simulado nesse teste, mesmo usando configuração de produção;
-nenhuma mensagem real é enviada. O teste de entrega real pelo Resend segue pendente.
+nenhuma mensagem real é enviada nesse cenário automatizado.
 O script confirmou a remoção do container e banco temporários, sem criar volumes.
-Essa homologação não usou contas nem banco de produção. A publicação das correções
-e a aprovação do novo commit no GitHub Actions ainda devem ser conferidas.
+Essa homologação não usou contas nem banco de produção. O commit `61ffe55` passou
+nos três jobs do [GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40590251626)
+e o deploy foi confirmado pela tela do Render apresentada por André.
+
+### Teste manual de entrega do Resend
+
+Em 27/10/2026, André criou uma chave de envio no Resend e informou a conclusão
+da configuração no Render de `RESEND_API_KEY`, `RESEND_FROM_EMAIL` e
+`EMAIL_DELIVERY_ENABLED`, usando o remetente de teste `Osiris <onboarding@resend.dev>`.
+Nenhum segredo foi registrado neste documento.
+
+Após receber instruções para solicitar a recuperação, conferir o código, redefinir
+a senha, entrar com a nova senha e verificar a recusa da antiga, André confirmou
+a conclusão do fluxo. Essa é uma validação manual relatada pelo usuário, restrita
+ao e-mail associado à própria conta Resend, que também corresponde ao proprietário.
+Não comprova entrega a outros destinatários nem a confirmação de troca de e-mail.
+
+O domínio próprio ainda não foi cadastrado/verificado. O remetente `resend.dev`
+continua apenas para teste; liberar entrega aos demais usuários depende de um
+domínio verificado e de um remetente desse domínio.

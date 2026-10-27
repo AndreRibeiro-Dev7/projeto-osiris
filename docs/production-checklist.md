@@ -38,7 +38,10 @@ da versão implantada.
 ## 4. E-mail e integrações
 
 - [ ] Verificar um domínio de envio no Resend.
-- [ ] Validar confirmação de e-mail e recuperação de senha.
+- [x] Validar recuperação por e-mail com remetente de teste, no e-mail da própria conta Resend.
+  Fluxo manual confirmado por André em 27/10/2026, conforme o
+  [guia de autenticação](./authentication.md#teste-manual-de-entrega-do-resend).
+- [ ] Validar confirmação de troca de e-mail e entrega aos demais usuários com domínio verificado.
 - [ ] Configurar a API oficial do WhatsApp e seus webhooks.
 - [ ] Concluir sincronização e tratamento de erros do calendário.
 - [ ] Definir limites e alertas de consumo para OpenAI e demais provedores.
