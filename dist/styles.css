@@ -95,3 +95,4 @@ input,select,textarea{background:#101a14;color:#f3f6f3;border-color:var(--line);
 @media(max-width:760px){.workspace>header{min-height:76px;padding-top:12px;padding-bottom:12px;gap:12px}.workspace>header #menu{flex-shrink:0;min-width:32px;min-height:44px}}
 @media(prefers-reduced-motion:reduce){.app-shell>aside,.sidebar-backdrop{transition:none}}
 @media(max-width:1100px){.expense-row{grid-template-columns:minmax(0,1fr) auto}.expense-row>div{min-width:0;overflow-wrap:anywhere}.expense-row .actions{grid-column:1/-1;flex-wrap:wrap}}
+.stats>article{min-width:0;overflow-wrap:anywhere}

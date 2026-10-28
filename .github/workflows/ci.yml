@@ -22,6 +22,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Validate booking login and owner dashboard across screen sizes
         run: node --test scripts/test_booking_dialog.cjs scripts/test_login_ui.cjs scripts/test_owner_ui.cjs
+      - name: Save owner layout failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-layout-failure
+          path: work/owner-*.png
+          if-no-files-found: ignore
 
   tenant-isolation:
     runs-on: ubuntu-latest

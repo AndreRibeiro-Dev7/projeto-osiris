@@ -4,13 +4,13 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { chromium } = require('playwright');
 
-for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }]) {
-  test(`owner navigation and forms at ${viewport.width}px`, async () => {
+for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }, { width: 768, height: 1024, font: 'Arial', gutter: true }]) {
+  test(`owner navigation and forms at ${viewport.width}px${viewport.font ? ' with fallback font' : ''}`, async () => {
     const browser = await chromium.launch({ headless: true,
       ...(process.env.OSIRIS_BROWSER_CHANNEL ? { channel: process.env.OSIRIS_BROWSER_CHANNEL } : {}),
     });
     try {
-      const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height }, reducedMotion: 'reduce' });
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       await page.clock.install({ time: new Date('2026-10-27T15:00:00Z') });
@@ -56,6 +56,13 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
         return route.fulfill({ json: data });
       });
       await page.goto('http://osiris.test/dashboard/');
+      const font = viewport.font || process.env.OSIRIS_UI_FONT;
+      if (font) {
+        await page.addStyleTag({ content: `body, .app-shell * { font-family: ${font}, sans-serif !important; }` });
+      }
+      if (viewport.gutter || process.env.OSIRIS_UI_GUTTER) {
+        await page.addStyleTag({ content: 'html { scrollbar-gutter: stable; }' });
+      }
       await page.locator('#app-view').waitFor({ state: 'visible' });
       await page.locator('#home-revenue').filter({ hasNotText: '—' }).waitFor();
       const overflow = [];
@@ -64,7 +71,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
         if (size.width > size.viewport + 1) {
           const offenders = await page.evaluate(() => Array.from(document.querySelectorAll('body *'))
             .filter(item => item.getBoundingClientRect().right > innerWidth + 1 && item.getBoundingClientRect().width > 0)
-            .map(item => ({ id: item.id, className: String(item.className), right: Math.round(item.getBoundingClientRect().right) })).slice(0, 12));
+            .map(item => ({ tag: item.tagName, id: item.id, className: String(item.className), parent: item.parentElement?.id || item.parentElement?.className, text: item.textContent?.slice(0, 70), right: Math.round(item.getBoundingClientRect().right) })).slice(0, 12));
           overflow.push({ name, ...size, offenders });
         }
         const headerFits = await page.evaluate(() => {
@@ -75,7 +82,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
           });
         });
         assert.equal(headerFits, true, 'Business name and date must fit inside the header');
-        if (process.env.OSIRIS_SCREENSHOTS) {
+        if (process.env.OSIRIS_SCREENSHOTS || size.width > size.viewport + 1) {
           await page.screenshot({ path: `work/owner-${viewport.width}-${name}.png`, fullPage: true, animations: 'disabled' });
         }
       }

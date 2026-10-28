@@ -33,9 +33,18 @@ simulada, contador de bloqueio e recuperação de senha simulada.
 
 ## Resultado e limites
 
-Os **sete testes de navegador passaram**: dois da reserva, dois do login e três
-do painel do proprietário. Os testes Python de dependências de deploy e workflow
-também passaram. O GitHub Actions passa a executar os três scripts de navegador.
+Os sete testes iniciais passaram localmente, mas o CI do commit `9bc3fbd`
+detectou 13 pixels de transbordamento nos indicadores financeiros do tablet.
+Qualidade e PostgreSQL passaram nessa execução; somente a interface falhou.
+O problema foi reproduzido localmente ao aplicar Arial também aos títulos e
+reservar o espaço da barra de rolagem, como cenário de fonte alternativa.
+
+A correção permite que os cartões de indicadores reduzam a largura mínima e
+quebrem conteúdo quando necessário, sem esconder o excesso na página. O cenário
+foi mantido como regressão. Os **oito testes de navegador passaram** após corrigir:
+dois da reserva, dois do login e quatro do painel do proprietário. Os testes Python
+de dependências de deploy e workflow também passaram. O GitHub Actions executa
+os três scripts e guarda capturas das falhas de largura como artefato.
 
 Ainda faltam a aprovação desse commit no CI, a publicação e a revisão visual da
 versão implantada. Esta validação usa Chromium: não substitui teste em aparelhos
