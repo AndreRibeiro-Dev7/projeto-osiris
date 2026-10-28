@@ -28,6 +28,48 @@ cliente e o intervalo desejado. Datas devem incluir fuso horário no formato ISO
 Durante a decisão, a linha do barbeiro é bloqueada na transação. Isso faz duas
 requisições simultâneas para o mesmo barbeiro serem avaliadas uma de cada vez.
 
+## Validação adicional da agenda interna
+
+O teste `tests/integration/test_scheduling_database.py` prepara uma empresa,
+um proprietário, um barbeiro, um cliente e um serviço fictícios em PostgreSQL
+temporário. Usa login real e chamadas HTTP, sem substituir permissões ou repositórios.
+
+O cenário verifica:
+
+- Configuração de expediente, pausa de almoço e disponibilidade nas bordas da pausa.
+- Inclusão e remoção de folga, retirando e devolvendo horários da disponibilidade.
+- Duas criações simultâneas no mesmo horário: uma aceita e outra recusada.
+- Reservas adjacentes permitidas e reagendamento para horário ocupado recusado,
+  preservando o horário original no banco.
+- Reagendamento livre, confirmação, cancelamento e liberação do horário.
+- Recusa de fechamento quando existem reservas ativas e bloqueio de novas reservas
+  e reagendamentos para a data fechada.
+- Dois reagendamentos concorrentes para o mesmo horário: um aceito e outro recusado.
+
+A revisão identificou que o reagendamento interno não consultava o fechamento
+da barbearia nem bloqueava o barbeiro de destino durante a disputa de horário.
+Ambas as verificações foram adicionadas. A data de fechamento é interpretada
+no fuso da barbearia, com teste unitário específico para a mudança de dia em UTC.
+
+Esta cobertura de pausa e folga trata da disponibilidade calculada. Ela não
+comprova que todos os caminhos de criação manual rejeitem intervalos fora dessa
+disponibilidade; a API interna aceita intervalos manuais, enquanto o fluxo público
+valida os horários oferecidos.
+
+Para executar, com Docker Desktop iniciado:
+
+```powershell
+.\.venv-codex\Scripts\python.exe .\scripts\test_tenant_isolation.py
+```
+
+O script executa todos os testes de integração em um contêiner temporário, sem
+volume e com porta somente local. André executou o cenário e apresentou o resultado:
+**sete testes de integração aprovados em 12,80 segundos**, incluindo a agenda
+interna. O contêiner e o banco temporários foram removidos, sem criação de volumes.
+A suíte local também passou com 349 testes, além de lint, formatação e tipos.
+Essa evidência conclui a homologação isolada; a aprovação no CI e a conferência
+da versão publicada permanecem pendentes até o push.
+
 ## Consulta pelo cliente na página pública
 
 Após reservar, o cliente pode abrir **Gerenciar minha reserva** na própria página.

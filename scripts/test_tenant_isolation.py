@@ -113,6 +113,10 @@ def main() -> int:
                 return result.returncode
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
         print("Acesso validado: login, bloqueio, recuperacao simulada e revogacao de sessoes.")
+        print(
+            "Agenda interna validada: conflitos, pausa, folga, fechamento, "
+            "reagendamento e cancelamento."
+        )
         print("Financeiro validado: pagamentos, comissoes, despesas, concorrencia, meta e Excel.")
         print(
             "Recuperacao WhatsApp validada com envio simulado: codigo unico, limites e isolamento."

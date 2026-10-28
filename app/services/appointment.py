@@ -133,7 +133,13 @@ class AppointmentService:
             raise InvalidAppointmentStatusTransitionError(
                 f"Cannot reschedule an appointment with status {appointment.status.value}."
             )
-        barber = await self._barbers.get_by_id(payload.barber_id)
+        business = await self._businesses.get_by_id(business_id)
+        if business is None:
+            raise ResourceNotFoundError("Business not found.")
+        local_date = payload.starts_at.astimezone(ZoneInfo(business.timezone)).date()
+        if await self._closures.get_for_date(business_id, local_date):
+            raise SchedulingConflictError("The business is closed on this date.")
+        barber = await self._barbers.get_by_id_for_update(payload.barber_id)
         if barber is None or barber.business_id != business_id:
             raise InvalidSchedulingReferenceError("Barber does not belong to this business.")
         if not barber.is_active:

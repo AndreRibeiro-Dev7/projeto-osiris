@@ -99,3 +99,54 @@ def test_status_change_rejects_unknown_appointment() -> None:
         asyncio.run(service.confirm(BUSINESS_ID, uuid4()))
 
     session_mock.commit.assert_not_awaited()
+
+
+@pytest.mark.parametrize("closed", [True, False])
+def test_reschedule_checks_closure_and_locks_destination_barber(
+    monkeypatch: pytest.MonkeyPatch, closed: bool
+) -> None:
+    from app.core.exceptions import SchedulingConflictError
+    from app.models.barber import Barber
+    from app.models.business import Business
+    from app.models.service import Service
+    from app.schemas.appointment import AppointmentRescheduleRequest
+
+    appointment = make_appointment(AppointmentStatus.SCHEDULED)
+    service, session = make_service(appointment)
+    business = Business(id=BUSINESS_ID, timezone="America/Sao_Paulo")
+    barber = Barber(id=uuid4(), business_id=BUSINESS_ID, is_active=True)
+    cut = Service(
+        id=uuid4(), business_id=BUSINESS_ID, is_active=True, duration_minutes=30, price_cents=2500
+    )
+    monkeypatch.setattr(service._businesses, "get_by_id", AsyncMock(return_value=business))
+    closure = AsyncMock(return_value=object() if closed else None)
+    monkeypatch.setattr(service._closures, "get_for_date", closure)
+    locked_barber = AsyncMock(return_value=barber)
+    monkeypatch.setattr(service._barbers, "get_by_id_for_update", locked_barber)
+    monkeypatch.setattr(service._services, "get_by_id", AsyncMock(return_value=cut))
+    conflict = AsyncMock(return_value=False)
+    monkeypatch.setattr(service._appointments, "has_active_conflict", conflict)
+    # 01:00 UTC is still the previous business day in São Paulo.
+    new_start = datetime(2030, 1, 17, 1, tzinfo=UTC)
+    original_start = appointment.starts_at
+    payload = AppointmentRescheduleRequest(
+        barber_id=barber.id, service_id=cut.id, starts_at=new_start
+    )
+    if closed:
+        with pytest.raises(SchedulingConflictError, match="closed"):
+            asyncio.run(service.reschedule(BUSINESS_ID, appointment.id, payload))
+        session.commit.assert_not_awaited()
+        locked_barber.assert_not_awaited()
+        assert appointment.starts_at == original_start
+    else:
+        result = asyncio.run(service.reschedule(BUSINESS_ID, appointment.id, payload))
+        locked_barber.assert_awaited_once_with(barber.id)
+        conflict.assert_awaited_once_with(
+            barber_id=barber.id,
+            starts_at=new_start,
+            ends_at=new_start + timedelta(minutes=30),
+            exclude_appointment_id=appointment.id,
+        )
+        session.commit.assert_awaited_once()
+        assert result.starts_at == new_start
+    closure.assert_awaited_once_with(BUSINESS_ID, new_start.date() - timedelta(days=1))

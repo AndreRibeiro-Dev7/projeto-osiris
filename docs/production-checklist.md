@@ -67,7 +67,12 @@ da versão implantada.
   [guia de autenticação](./authentication.md#validação-adicional-de-acesso-em-27102026);
   a homologação PostgreSQL foi aprovada em 27/10/2026. A entrega real de e-mail
   e a conferência dos demais fluxos de cadastro e logout permanecem pendentes.
-- [ ] Testar agenda, conflitos, folgas, cancelamento e reagendamento.
+- [x] Testar agenda, conflitos, folgas, cancelamento e reagendamento em homologação isolada.
+  O cenário HTTP da agenda interna está documentado no
+  [guia de agendamento](./scheduling.md#validação-adicional-da-agenda-interna),
+  incluindo concorrência e fechamento. André apresentou sete testes de integração
+  aprovados em PostgreSQL temporário (12,80 segundos). Falta conferir a publicação
+  da correção; pausas e folgas foram verificadas na disponibilidade calculada.
 - [x] Testar o fluxo HTTP de agendamento público com PostgreSQL real.
 - [x] Testar a orquestração do assistente com PostgreSQL real e modelo simulado.
 - [ ] Testar interpretação e respostas do assistente com o provedor real de IA.
