@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import secrets
 import shutil
@@ -37,6 +38,11 @@ def docker_command(
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--load", action="store_true", help="Run the isolated moderate load scenario"
+    )
+    options = parser.parse_args()
     docker = find_docker()
     identifier = uuid4().hex
     container = f"osiris-isolation-test-{identifier}"
@@ -58,10 +64,11 @@ def main() -> int:
         "RESEND_API_KEY": "",
         "WHATSAPP_RECOVERY_ENABLED": "false",
         "WHATSAPP_ACCESS_TOKEN": "",
+        "OSIRIS_RUN_LOAD_TEST": "true" if options.load else "false",
     }
     created = False
     try:
-        print("Iniciando PostgreSQL temporario para duas barbearias ficticias...", flush=True)
+        print("Iniciando PostgreSQL temporario para homologacao isolada...", flush=True)
         result = docker_command(
             docker,
             "run",
@@ -102,15 +109,23 @@ def main() -> int:
             f"postgresql+asyncpg://postgres:{password}@127.0.0.1:{port}/{database}"
         )
         environment["OSIRIS_INTEGRATION_DATABASE_URL"] = environment["DATABASE_URL"]
+        test_arguments = (
+            ["tests/integration/test_load_database.py", "-s"]
+            if options.load
+            else ["tests/integration"]
+        )
         for arguments in (
             ["-m", "alembic", "upgrade", "head"],
-            ["-m", "pytest", "tests/integration", "-p", "no:cacheprovider"],
+            ["-m", "pytest", *test_arguments, "-p", "no:cacheprovider"],
         ):
             result = subprocess.run(
                 [sys.executable, *arguments], cwd=ROOT, env=environment, check=False, timeout=180
             )
             if result.returncode:
                 return result.returncode
+        if options.load:
+            print("Carga moderada validada em PostgreSQL temporario; producao nao foi acessada.")
+            return 0
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
         print("Acesso validado: login, bloqueio, recuperacao simulada e revogacao de sessoes.")
         print(

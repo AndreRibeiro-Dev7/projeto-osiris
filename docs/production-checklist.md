@@ -87,6 +87,11 @@ da versão implantada.
   pelo usuário. A revisão nos demais aparelhos e em Safari/iOS permanece pendente.
 - [x] Testar isolamento com duas empresas diferentes.
 - [ ] Realizar teste de carga compatível com o uso esperado.
+  O [cenário moderado e isolado](./load-validation.md) foi executado por André:
+  100 consultas bem-sucedidas com concorrência de dez requisições, p95 de 309,7 ms
+  e uma única reserva em dez tentativas simultâneas, sem cadastros órfãos.
+  Falta o ensaio com infraestrutura e histórico comparáveis ao uso esperado;
+  o resultado local não mede a capacidade do plano de produção.
 - [ ] Fazer homologação com dados fictícios e depois com o cliente piloto.
 
 ## 7. Entrada em operação

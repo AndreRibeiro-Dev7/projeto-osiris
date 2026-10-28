@@ -52,6 +52,7 @@ jobs:
       # Credentials belong only to the disposable CI service, never production.
       DATABASE_URL: postgresql+asyncpg://postgres:isolated-ci-password@127.0.0.1:5432/osiris_isolation_test_ci
       OSIRIS_INTEGRATION_DATABASE_URL: postgresql+asyncpg://postgres:isolated-ci-password@127.0.0.1:5432/osiris_isolation_test_ci
+      OSIRIS_RUN_LOAD_TEST: "true"
       JWT_SECRET_KEY: isolated-ci-signing-key-not-used-in-any-deployment
       ENVIRONMENT: development
       API_V1_PREFIX: /api/v1
@@ -71,8 +72,8 @@ jobs:
         run: pip install ".[dev]"
       - name: Apply migrations to isolated PostgreSQL
         run: alembic upgrade head
-      - name: Validate tenants, public booking and assistant workflow
-        run: pytest tests/integration -p no:cacheprovider
+      - name: Validate tenants workflows and bounded scheduling load
+        run: pytest tests/integration -p no:cacheprovider -rP
 
   quality:
     runs-on: ubuntu-latest
