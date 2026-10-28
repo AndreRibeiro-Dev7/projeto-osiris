@@ -20,8 +20,8 @@ jobs:
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Validate booking and login on mobile and desktop
-        run: node --test scripts/test_booking_dialog.cjs scripts/test_login_ui.cjs
+      - name: Validate booking login and owner dashboard across screen sizes
+        run: node --test scripts/test_booking_dialog.cjs scripts/test_login_ui.cjs scripts/test_owner_ui.cjs
 
   tenant-isolation:
     runs-on: ubuntu-latest
