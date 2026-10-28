@@ -73,9 +73,10 @@ da versão implantada.
   [guia de validação financeira](./financial-validation.md). A revisão visual da
   versão implantada permanece pendente.
 - [ ] Testar interface em celular, tablet e computador.
-  Oito cenários de navegador foram aprovados localmente em 27/10/2026, conforme
-  o [guia de interface](./interface-validation.md). A revisão em aparelhos reais
-  e do painel restrito do profissional permanece pendente.
+  A cobertura inclui reserva pública, login e painéis do proprietário e barbeiro,
+  conforme o [guia de interface](./interface-validation.md). A agenda e o financeiro
+  publicados foram conferidos pelo usuário. A revisão em aparelhos reais e do
+  painel restrito do profissional publicado permanece pendente.
 - [x] Testar isolamento com duas empresas diferentes.
 - [ ] Realizar teste de carga compatível com o uso esperado.
 - [ ] Fazer homologação com dados fictícios e depois com o cliente piloto.

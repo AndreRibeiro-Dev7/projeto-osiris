@@ -20,14 +20,16 @@ jobs:
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Validate booking login and owner dashboard across screen sizes
-        run: node --test scripts/test_booking_dialog.cjs scripts/test_login_ui.cjs scripts/test_owner_ui.cjs
-      - name: Save owner layout failure screenshots
+      - name: Validate booking login owner and barber dashboards across screen sizes
+        run: node --test scripts/test_booking_dialog.cjs scripts/test_login_ui.cjs scripts/test_owner_ui.cjs scripts/test_barber_ui.cjs
+      - name: Save dashboard layout failure screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: owner-layout-failure
-          path: work/owner-*.png
+          name: dashboard-layout-failure
+          path: |
+            work/owner-*.png
+            work/barber-*.png
           if-no-files-found: ignore
 
   tenant-isolation:

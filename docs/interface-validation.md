@@ -31,7 +31,25 @@ Os cenários anteriores de reserva e login continuam sendo executados em celular
 e computador, incluindo cancelamento, horário expirado, recuperação por WhatsApp
 simulada, contador de bloqueio e recuperação de senha simulada.
 
-## Resultado e limites
+## Painel do barbeiro
+
+O teste `scripts/test_barber_ui.cjs` verifica larguras de 375, 768 e 1280 pixels.
+Confere a agenda exclusiva do profissional, ausência dos controles administrativos,
+detalhes do cliente e serviço e observações em modo somente leitura. Exercita
+confirmação, conclusão com Pix, falha de pagamento com nova tentativa, falta,
+sessão expirada e saída da conta. Todas as chamadas são interceptadas: nenhum
+pagamento, mensagem ou atendimento real é alterado. O teste também verifica que
+as chamadas da interface usam as rotas próprias do barbeiro; a autorização do
+servidor continua coberta pelos testes de integração separados.
+
+As observações agora ficam somente para leitura no painel do profissional,
+coerente com a ausência de permissão para salvá-las.
+
+Os **11 testes de navegador passaram localmente** em 27/10/2026: dois da reserva,
+dois do login, quatro do proprietário e três do barbeiro. Os dois testes Python
+de configuração de deploy e monitoramento também passaram.
+
+## Histórico dos resultados
 
 Os sete testes iniciais passaram localmente, mas o CI do commit `9bc3fbd`
 detectou 13 pixels de transbordamento nos indicadores financeiros do tablet.
@@ -44,8 +62,9 @@ quebrem conteúdo quando necessário, sem esconder o excesso na página. O cená
 foi mantido como regressão. Os **oito testes de navegador passaram** após corrigir:
 dois da reserva, dois do login e quatro do painel do proprietário. Os testes Python
 de dependências de deploy e workflow também passaram. O GitHub Actions executa
-os três scripts e guarda capturas das falhas de largura como artefato.
+os quatro scripts e guarda capturas das falhas de largura dos painéis como artefato.
 
-Ainda faltam a aprovação desse commit no CI, a publicação e a revisão visual da
-versão implantada. Esta validação usa Chromium: não substitui teste em aparelhos
-reais, Safari/iOS ou a revisão específica do painel restrito do profissional.
+O commit `7f3a359` foi aprovado no GitHub Actions, publicado no Render e teve a
+agenda e o financeiro conferidos pelo usuário. A ampliação para o painel do
+barbeiro deve passar pelo CI e pela revisão da versão publicada após o push.
+Esta validação usa Chromium e não substitui testes em aparelhos reais ou Safari/iOS.

@@ -330,7 +330,7 @@ function openAppointmentDetail(id) {
   const customerName = appointment.customer_name || customer?.full_name || "Cliente"; const customerPhone = appointment.customer_phone || customer?.phone || ""; const serviceName = appointment.service_name || service?.name || "Atendimento";
   $("appointment-detail-title").textContent = customerName; $("appointment-detail-subtitle").textContent = `${formatAppointmentDate(appointment.starts_at)} · ${formatTime(appointment.starts_at)} às ${formatTime(appointment.ends_at)}`;
   $("appointment-detail-content").innerHTML = `<dl><div><dt>Telefone</dt><dd>${escapeHtml(customerPhone || "Não informado")}</dd></div><div><dt>Profissional</dt><dd>${escapeHtml(barber?.full_name || state.barbers[0]?.full_name || "Não informado")}</dd></div><div><dt>Serviço</dt><dd>${escapeHtml(serviceName)}</dd></div><div><dt>Status</dt><dd><span class="badge ${appointment.status}">${statusLabel(appointment.status)}</span></dd></div><div><dt>Valor</dt><dd>${appointment.price_cents != null ? formatMoney(appointment.price_cents) : "Não informado"}</dd></div></dl>`;
-  $("appointment-detail-notes").value = appointment.notes || ""; $("appointment-detail-error").textContent = "";
+  $("appointment-detail-notes").value = appointment.notes || ""; $("appointment-detail-notes").readOnly = state.me.role === "barber"; $("appointment-detail-error").textContent = "";
   $("appointment-detail-whatsapp").hidden = !customerPhone; $("appointment-detail-whatsapp").dataset.phone = customerPhone; $("appointment-detail-modal").hidden = false; document.body.classList.add("modal-open");
 }
 function closeAppointmentDetail() { $("appointment-detail-modal").hidden = true; document.body.classList.remove("modal-open"); }
