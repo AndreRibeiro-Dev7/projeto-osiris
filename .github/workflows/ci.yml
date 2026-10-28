@@ -7,6 +7,42 @@ on:
     branches: [main]
 
 jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install application and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+          python -m pip list --format=freeze --exclude projeto-osiris > dependency-requirements.txt
+      - name: Install isolated audit tool
+        run: |
+          python -m venv .venv-audit
+          .venv-audit/bin/python -m pip install --upgrade pip
+          .venv-audit/bin/python -m pip install pip-audit==2.10.1
+      - name: Audit installed package versions
+        run: >-
+          .venv-audit/bin/python -m pip_audit
+          --requirement dependency-requirements.txt --no-deps --disable-pip
+          --strict --progress-spinner off --format json --output dependency-audit.json
+          --cache-dir work/audit-cache
+      - name: Save dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: |
+            dependency-requirements.txt
+            dependency-audit.json
+          if-no-files-found: warn
+
   booking-ui:
     runs-on: ubuntu-latest
     permissions:

@@ -36,7 +36,11 @@ da versão implantada.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
 - [ ] Criar trilha de auditoria para ações administrativas e financeiras.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).
-- [ ] Revisar dependências e corrigir vulnerabilidades conhecidas.
+- [x] Revisar dependências e corrigir vulnerabilidades conhecidas no inventário local.
+  A [auditoria das dependências](./dependency-security.md) identificou avisos em
+  ferramentas de desenvolvimento, que foram atualizadas. A nova consulta dos
+  92 pacotes locais não encontrou avisos conhecidos. O novo job automático do CI
+  ainda precisa ser aprovado após o push; a imagem de produção não foi inventariada.
 
 ## 4. E-mail e integrações
 

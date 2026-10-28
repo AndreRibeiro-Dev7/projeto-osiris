@@ -26,9 +26,7 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    op.execute(
-        sa.text(
-            """
+    op.execute(sa.text("""
             UPDATE users
             SET is_primary_owner = TRUE
             WHERE id IN (
@@ -37,9 +35,7 @@ def upgrade() -> None:
                 WHERE role = 'owner'
                 ORDER BY business_id, created_at, id
             )
-            """
-        )
-    )
+            """))
     op.create_index(
         "uq_users_primary_owner_per_business",
         "users",
