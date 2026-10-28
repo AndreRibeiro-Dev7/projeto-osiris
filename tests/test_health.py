@@ -17,7 +17,30 @@ def test_health_check_returns_application_status() -> None:
         "status": "ok",
         "application": "Projeto Osiris",
         "version": "0.1.0",
+        "revision": None,
     }
+
+
+def test_health_reports_deployed_revision(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.core.config import Settings
+
+    revision = "7fcb79239ad771265dfe3d814c759234c6dd509d"
+    settings = Settings(_env_file=None, render_git_commit=revision)
+    monkeypatch.setattr("app.api.v1.routes.health.get_settings", lambda: settings)
+    response = TestClient(app).get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json()["revision"] == revision
+
+
+@pytest.mark.parametrize("value", ["", "invalid revision", "https://private.example/token"])
+def test_health_does_not_expose_invalid_revision(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    from app.core.config import Settings
+
+    settings = Settings(_env_file=None, render_git_commit=value)
+    monkeypatch.setattr("app.api.v1.routes.health.get_settings", lambda: settings)
+    assert TestClient(app).get("/api/v1/health").json()["revision"] is None
 
 
 def test_assistant_returns_service_unavailable_without_api_key(

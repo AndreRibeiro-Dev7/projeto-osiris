@@ -9,6 +9,7 @@ class HealthResponse(BaseModel):
     status: str
     application: str
     version: str
+    revision: str | None = None
 
 
 class DatabaseHealthResponse(BaseModel):

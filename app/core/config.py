@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Projeto Osiris"
     app_version: str = "0.1.0"
+    render_git_commit: str = ""
     environment: str = "development"
     debug: bool = True
     log_level: str = "INFO"
@@ -40,6 +41,15 @@ class Settings(BaseSettings):
     discord_alert_webhook_url: str = ""
     operational_alert_cooldown_seconds: int = 300
     operational_alert_timeout_seconds: float = 5.0
+
+    @field_validator("render_git_commit")
+    @classmethod
+    def normalize_deployment_revision(cls, value: str) -> str:
+        """Expose only a full Git SHA, never arbitrary environment content."""
+        revision = value.strip().lower()
+        if len(revision) in {40, 64} and all(char in "0123456789abcdef" for char in revision):
+            return revision
+        return ""
 
     @field_validator("database_url", mode="before")
     @classmethod

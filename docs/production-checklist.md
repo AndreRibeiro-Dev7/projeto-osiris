@@ -14,6 +14,9 @@ da versão implantada.
 - [x] Executar testes, lint, formatação e verificação de tipos.
 - [x] Aplicar todas as migrações em um banco de homologação.
 - [ ] Criar uma versão identificável e documentar como fazer rollback.
+  A identificação do commit em `/api/v1/health` e o procedimento estão preparados
+  no [guia de publicação](./deployment.md#atualizações-e-rollback). Falta conferir
+  `revision` na versão publicada; nenhum rollback de produção foi executado.
 
 ## 2. Infraestrutura
 
@@ -75,8 +78,8 @@ da versão implantada.
 - [ ] Testar interface em celular, tablet e computador.
   A cobertura inclui reserva pública, login e painéis do proprietário e barbeiro,
   conforme o [guia de interface](./interface-validation.md). A agenda e o financeiro
-  publicados foram conferidos pelo usuário. A revisão em aparelhos reais e do
-  painel restrito do profissional publicado permanece pendente.
+  publicados e o painel restrito do profissional no celular foram conferidos
+  pelo usuário. A revisão nos demais aparelhos e em Safari/iOS permanece pendente.
 - [x] Testar isolamento com duas empresas diferentes.
 - [ ] Realizar teste de carga compatível com o uso esperado.
 - [ ] Fazer homologação com dados fictícios e depois com o cliente piloto.

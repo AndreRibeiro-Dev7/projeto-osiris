@@ -117,6 +117,12 @@ JSON inválido e resposta lenta. Esses cinco cenários são executados no Linux 
 GitHub Actions; no Windows ficam explicitamente pulados. Nenhum teste consulta
 produção ou cria ocorrências.
 
+Em 27/10/2026 (horário de São Paulo), o commit `7fcb792` passou no CI com
+348 testes aprovados e seis testes de integração pulados nessa suíte. Os cinco
+cenários Bash foram executados no Linux. A
+[verificação manual em produção](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40611135122)
+concluiu com sucesso e encerrou automaticamente a ocorrência número 2.
+
 ## Métricas de operações críticas
 
 As operações de agendamento e financeiro geram o evento estruturado

@@ -107,3 +107,51 @@ Cada atualização deve executar os testes antes da publicação. As migrações
 aplicadas automaticamente ao iniciar o contêiner. Antes de uma alteração de
 banco relevante, crie um backup e confirme que a versão anterior da imagem
 continua disponível para rollback.
+
+### Identificar a versão publicada
+
+O endpoint `/api/v1/health` mantém a versão funcional em `version` e informa o
+SHA completo do código em `revision`. O Render fornece esse SHA automaticamente
+em `RENDER_GIT_COMMIT`, conforme a
+[documentação das variáveis padrão](https://render.com/docs/environment-variables).
+Fora do Render, ou se o valor não for um SHA válido, `revision` será `null`.
+Não é necessário adicionar essa variável manualmente no painel.
+
+No PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri 'https://osiris-api-5ujk.onrender.com/api/v1/health' -TimeoutSec 120
+```
+
+Compare `revision` com o commit aprovado no GitHub Actions e exibido como Live
+no Render. Registre os links do CI, do deploy e do monitor saudável. Ter apenas
+o push concluído não confirma que esse código já está em produção.
+
+### Reverter uma publicação
+
+1. Registre o commit atual, o problema e o último deploy saudável. Confira se o
+   artefato desse deploy ainda está disponível no Render.
+2. Revise as migrações entre as duas versões. O rollback da aplicação não desfaz
+   alterações no PostgreSQL. Se a versão anterior for incompatível com o schema
+   atual, prepare uma correção compatível ou teste a recuperação em banco isolado
+   antes de qualquer alteração em produção. Não execute `alembic downgrade`
+   automaticamente.
+3. Na página **osiris-api → Deploys**, localize o deploy saudável, clique em
+   **Rollback** e confira o commit na confirmação antes de executar
+   **Rollback to this deploy**.
+4. Aguarde o resultado e consulte `/api/v1/health` e
+   `/api/v1/health/database`. Quando a versão de destino oferecer `revision`,
+   confira o SHA retornado; em versões anteriores, use o registro do deploy.
+5. Confira login, agenda e o fluxo afetado. Execute o monitor no modo
+   `health-check` e registre a recuperação.
+6. Corrija a causa no repositório e aprove o CI antes da nova publicação.
+   O rollback pelo painel desativa os deploys automáticos: confira essa opção
+   em **Settings** e reative-a quando a correção estiver pronta.
+
+O Render pode reutilizar variáveis do deploy de destino e mantém a configuração
+atual de grupos de ambiente. Confira as configurações usadas no rollback,
+especialmente credenciais rotacionadas. Consulte o
+[procedimento oficial](https://render.com/docs/rollbacks).
+
+Esse procedimento está documentado; nenhum rollback real foi executado nesta
+etapa. A identificação por `revision` deve ser conferida após publicar a mudança.

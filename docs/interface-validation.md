@@ -66,5 +66,6 @@ os quatro scripts e guarda capturas das falhas de largura dos painéis como arte
 
 O commit `7f3a359` foi aprovado no GitHub Actions, publicado no Render e teve a
 agenda e o financeiro conferidos pelo usuário. A ampliação para o painel do
-barbeiro deve passar pelo CI e pela revisão da versão publicada após o push.
+barbeiro foi aprovada no CI do commit `2dd9f01`; André também confirmou a
+publicação e a revisão do painel no celular.
 Esta validação usa Chromium e não substitui testes em aparelhos reais ou Safari/iOS.

@@ -16,4 +16,5 @@ async def health_check() -> HealthResponse:
         status="ok",
         application=settings.app_name,
         version=settings.app_version,
+        revision=settings.render_git_commit or None,
     )
