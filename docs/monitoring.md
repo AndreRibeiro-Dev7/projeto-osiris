@@ -102,6 +102,21 @@ execução vermelha de forma intencional. Depois, execute novamente escolhendo
 `health-check`; essa opção valida API e banco e encerra a ocorrência
 automaticamente.
 
+## Resposta após nova tentativa
+
+O monitor realiza até duas tentativas por endpoint, com intervalo de 15 segundos
+após uma falha do curl. O corpo HTTP, os diagnósticos e os metadados da resposta
+ficam separados, e os arquivos são limpos antes de cada tentativa. Assim, um 503
+seguido de HTTP 200 com `status=ok` não contamina a validação do JSON nem gera um
+falso incidente. Permanecem as verificações de HTTP, JSON e limite de 90 segundos
+da resposta final.
+
+Os testes de regressão executam o próprio trecho Bash do workflow com curl
+simulado: recuperação após 503, indisponibilidade persistente, erro de transporte,
+JSON inválido e resposta lenta. Esses cinco cenários são executados no Linux do
+GitHub Actions; no Windows ficam explicitamente pulados. Nenhum teste consulta
+produção ou cria ocorrências.
+
 ## Métricas de operações críticas
 
 As operações de agendamento e financeiro geram o evento estruturado
