@@ -15,6 +15,7 @@ from app.core.logging import configure_logging
 from app.database.session import async_session_factory
 from app.services.audit import record_activity
 from app.services.operational_alerts import (
+    OperationalAlert,
     classify_operational_failure,
     dispatch_operational_alert,
 )
@@ -60,9 +61,42 @@ def create_app() -> FastAPI:
                         user=current_user,
                         method=request.method,
                         path=request.url.path,
+                        activity=getattr(request.state, "audit_activity", None),
                     )
             except Exception:
-                logger.exception("Could not persist the audit activity")
+                request_id = getattr(request.state, "request_id", None)
+                route = getattr(request.scope.get("route"), "path", "<unmatched>")
+                # Database exceptions can contain bound parameters and personal data.
+                logger.error(
+                    "audit.persistence_failed",
+                    extra={
+                        "event": "audit.persistence_failed",
+                        "request_id": request_id,
+                        "route": route,
+                    },
+                )
+                try:
+                    await dispatch_operational_alert(
+                        OperationalAlert(
+                            "integration",
+                            "audit_persistence_failed",
+                            "error",
+                            response.status_code,
+                            route,
+                        ),
+                        request_id=request_id,
+                        settings=settings,
+                    )
+                except Exception:
+                    # A notification failure must not turn a committed mutation into a retry.
+                    logger.error(
+                        "audit.alert_failed",
+                        extra={
+                            "event": "audit.alert_failed",
+                            "request_id": request_id,
+                            "route": route,
+                        },
+                    )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

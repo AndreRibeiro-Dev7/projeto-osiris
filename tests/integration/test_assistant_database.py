@@ -62,6 +62,7 @@ async def check_assistant_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.main import app
     from app.models.appointment import Appointment
     from app.models.assistant_conversation import AssistantConversation
+    from app.models.audit_log import AuditLog
     from app.models.barber import Barber
     from app.models.barber_schedule import BarberSchedule
     from app.models.barber_time_off import BarberTimeOff
@@ -158,6 +159,15 @@ async def check_assistant_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
 
             response = await send("Quais horários?")
             assert response.status_code == 200 and response.json()["action"] == "availability"
+            async with async_session_factory() as session:
+                history = list(
+                    (
+                        await session.scalars(
+                            select(AuditLog).where(AuditLog.business_id == business_id)
+                        )
+                    ).all()
+                )
+                assert history == []
             assert "2030-01-17T09:00:00-03:00" in model.contexts[-1]
             assert str(customer_id) not in model.contexts[-1]
             assert str(business_id) not in model.contexts[-1]
@@ -190,6 +200,18 @@ async def check_assistant_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
             assert first.json()["appointment_id"] == second.json()["appointment_id"]
             assert first.json()["action"] == second.json()["action"] == "booked"
             assert len(await records()) == 1
+            async with async_session_factory() as session:
+                history = list(
+                    (
+                        await session.scalars(
+                            select(AuditLog).where(AuditLog.business_id == business_id)
+                        )
+                    ).all()
+                )
+                assert len(history) == 2  # Two confirmations, one idempotent reservation.
+                assert all(
+                    item.area == "Agenda" and "assistente" in item.description for item in history
+                )
 
             # A new absence entered after the proposal invalidates that proposal.
             response = await send("Quero às 10:00")

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any
 
 import httpx
@@ -219,3 +220,43 @@ def test_delivery_test_uses_safe_copy_and_bypasses_cooldown(
         "O canal do Discord está configurado corretamente. " "Nenhuma falha real foi detectada."
     )
     assert embed["color"] == 0x3B82F6
+
+
+def test_alert_delivery_failure_does_not_log_webhook_token(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FailedClient:
+        def __init__(self, **kwargs: Any) -> None:
+            pass
+
+        async def __aenter__(self) -> "FailedClient":
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            return None
+
+        async def post(self, url: str, **kwargs: Any) -> None:
+            raise httpx.ConnectError(f"Simulated transport failure at {url}")
+
+    monkeypatch.setattr(httpx, "AsyncClient", FailedClient)
+    caplog.set_level(logging.ERROR, logger="app.operations")
+    settings = Settings(
+        _env_file=None,
+        discord_alert_webhook_url="https://discord.com/api/webhooks/123/audit-test-secret",
+    )
+    result = asyncio.run(
+        dispatch_operational_alert(
+            OperationalAlert("integration", "audit_persistence_failed", "error"),
+            settings=settings,
+            deduplicate=False,
+        )
+    )
+    assert result is False
+    failed = next(
+        r
+        for r in caplog.records
+        if getattr(r, "event", None) == "operational.alert_delivery_failed"
+    )
+    assert failed.exc_info is None
+    assert "audit-test-secret" not in caplog.text

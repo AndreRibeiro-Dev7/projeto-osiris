@@ -159,7 +159,7 @@ async def dispatch_operational_alert(
     except httpx.HTTPError:
         if deduplicate:
             _release_delivery(delivery_key)
-        logger.exception(
+        logger.error(
             f"{alert_summary} delivery=failed",
             extra={**log_fields, "event": "operational.alert_delivery_failed"},
         )

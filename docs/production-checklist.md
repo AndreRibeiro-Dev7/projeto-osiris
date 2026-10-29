@@ -47,7 +47,13 @@ da versão implantada.
   os demais endpoints públicos
   continuam fora desse contador.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
-- [ ] Criar trilha de auditoria para ações administrativas e financeiras.
+- [x] Validar trilha de auditoria para ações administrativas e financeiras em homologação.
+  A trilha existente recebeu uma [revisão de atividades](./activity-history.md),
+  com descrições mais precisas e alerta para falha de persistência. Os testes
+  adicionais foram aprovados por André em 29/10/2026: dez testes em PostgreSQL
+  temporário, um ignorado, em 24,12 segundos. A ação e seu histórico usam
+  transações separadas; não há recuperação automática de entradas ausentes.
+  A publicação desta revisão ainda está pendente.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).
 - [x] Revisar dependências e corrigir vulnerabilidades conhecidas no inventário local.
   A [auditoria das dependências](./dependency-security.md) identificou avisos em

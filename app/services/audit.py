@@ -6,9 +6,11 @@ from app.models.audit_log import AuditLog
 from app.models.user import User
 
 
-def describe_activity(method: str, path: str) -> tuple[str, str]:
+def describe_activity(method: str, path: str) -> tuple[str, str] | None:
     """Translate one successful API mutation into a safe user-facing description."""
     method = method.upper()
+    if path.endswith("/assistant/messages"):
+        return None  # A conversation request does not itself prove a business mutation.
     if path.endswith("/operational-alerts/test"):
         return "Configurações", "Enviou um alerta de teste ao Discord"
     if "/owner-accounts" in path:
@@ -76,9 +78,15 @@ def describe_activity(method: str, path: str) -> tuple[str, str]:
         )
     if "/barbers" in path:
         if "/schedule/" in path:
+            if method == "DELETE":
+                return "Equipe", "Removeu um dia da jornada de um profissional"
             return "Equipe", "Alterou a jornada de um profissional"
         if "/time-off" in path:
-            return "Equipe", "Alterou uma folga de profissional"
+            return "Equipe", (
+                "Removeu uma folga de profissional"
+                if method == "DELETE"
+                else "Adicionou uma folga de profissional"
+            )
         return (
             "Equipe",
             "Cadastrou um profissional" if method == "POST" else "Alterou um profissional",
@@ -88,9 +96,19 @@ def describe_activity(method: str, path: str) -> tuple[str, str]:
     return "Sistema", "Realizou uma alteração no sistema"
 
 
-async def record_activity(session: AsyncSession, *, user: User, method: str, path: str) -> None:
+async def record_activity(
+    session: AsyncSession,
+    *,
+    user: User,
+    method: str,
+    path: str,
+    activity: tuple[str, str] | None = None,
+) -> None:
     """Persist one successful mutation without storing request payloads or credentials."""
-    area, description = describe_activity(method, path)
+    activity = activity or describe_activity(method, path)
+    if activity is None:
+        return
+    area, description = activity
     session.add(
         AuditLog(
             business_id=user.business_id,

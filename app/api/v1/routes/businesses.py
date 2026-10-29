@@ -5,7 +5,7 @@ from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -962,6 +962,7 @@ async def list_barber_availability(
 async def send_assistant_message(
     business_id: UUID,
     payload: AssistantMessageRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> AssistantMessageResponse:
     """Reply to a customer using the barber's current availability."""
@@ -995,7 +996,7 @@ async def send_assistant_message(
         settings.openai_model,
     )
     try:
-        return await agent.reply(
+        result = await agent.reply(
             business_id=business_id,
             barber_id=payload.barber_id,
             appointment_date=payload.appointment_date,
@@ -1003,6 +1004,9 @@ async def send_assistant_message(
             customer_id=payload.customer_id,
             conversation_id=payload.conversation_id,
         )
+        if result.action == "booked":
+            request.state.audit_activity = ("Agenda", "Confirmou um agendamento pelo assistente")
+        return result
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except (InactiveBarberError, SchedulingConflictError) as error:
