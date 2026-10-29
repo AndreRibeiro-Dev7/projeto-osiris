@@ -51,6 +51,26 @@ de configuração de deploy e monitoramento também passaram.
 
 ## Histórico dos resultados
 
+### Atividades em 29/10/2026
+
+Os quatro cenários do proprietário passaram com histórico preenchido, em 375,
+768 e 1280 pixels e no tablet com fonte alternativa. Conferem filtro por área,
+resultado vazio, autoria de proprietário principal, coproprietário excluído e
+profissional, além do horário no fuso da barbearia. Textos contendo HTML são
+exibidos como texto, sem criar imagens ou scripts executáveis. Não há botões
+de edição ou exclusão nas entradas.
+
+Foi corrigida a atualização que mantinha entradas antigas na tela após falha
+de leitura: agora a lista mostra aviso e orienta usar Atualizar. O teste simula
+HTTP 503, verifica a remoção dos dados anteriores e uma nova tentativa bem-sucedida.
+O endereço versionado de `app.js` foi atualizado para renovar o cache.
+
+Os outros sete cenários de reserva, login e barbeiro também passaram: 11 testes
+de navegador aprovados. Os dois testes Python de configuração passaram; cinco
+cenários Bash/Linux ficaram ignorados no Windows. Ruff, Black e a conferência
+de espaços do diff passaram. A API é simulada nessa validação, sem mutações reais.
+A publicação desta melhoria de interface ainda está pendente.
+
 Os sete testes iniciais passaram localmente, mas o CI do commit `9bc3fbd`
 detectou 13 pixels de transbordamento nos indicadores financeiros do tablet.
 Qualidade e PostgreSQL passaram nessa execução; somente a interface falhou.

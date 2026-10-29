@@ -1131,7 +1131,13 @@ async function loadAuditLogs() {
     if ($("audit-area").value) params.set("area", $("audit-area").value);
     const items = await request(`/businesses/${state.me.business_id}/audit-logs?${params}`);
     renderAuditLogs(items);
-  } catch (error) { showToast(error.message); }
+  } catch (error) {
+    const message = document.createElement('div');
+    message.className = 'empty';
+    message.textContent = 'Não foi possível carregar o histórico. Clique em Atualizar para tentar novamente.';
+    $("audit-log-list").replaceChildren(message);
+    showToast(error.message);
+  }
   finally { button.disabled = false; button.textContent = "Atualizar"; }
 }
 

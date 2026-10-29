@@ -22,6 +22,13 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
       const service = { id: 'service', name: 'Corte, barba e acabamento especial', duration_minutes: 45, price_cents: 6000, is_active: true };
       const appointment = { id: 'appointment', public_token: 'public-token', customer_id: 'customer', barber_id: 'barber', service_id: 'service', starts_at: '2026-10-27T16:00:00Z', ends_at: '2026-10-27T16:45:00Z', status: 'confirmed', price_cents: 6000, notes: null };
       const expense = { id: 'expense', category: 'rent', description: 'Aluguel e despesas de manutenção do espaço', amount_cents: 240000, occurred_on: '2026-10-05', is_fixed: true, is_paid: false, paid_at: null };
+      const activities = [
+        { id: 'audit-owner', area: 'Financeiro', description: 'Confirmou o pagamento de uma despesa', actor_email: 'proprietario.principal.de.demonstracao@example.com', actor_role: 'owner', actor_is_primary_owner: true, created_at: '2026-10-27T14:30:00Z' },
+        { id: 'audit-deleted', area: 'Agenda', description: 'Confirmou um agendamento pelo assistente', actor_email: 'coproprietario.excluido.com.email.extenso@example.com', actor_user_id: null, actor_role: 'owner', actor_is_primary_owner: false, created_at: '2026-10-27T14:00:00Z' },
+        { id: 'audit-barber', area: 'Agenda', description: '<img src=x onerror="window.auditInjected=true">', actor_email: '<script>window.auditInjected=true</script>', actor_role: 'barber', actor_is_primary_owner: false, created_at: '2026-10-27T13:00:00Z' },
+      ];
+      let failAudit = false;
+      const auditQueries = [];
       await page.route('http://osiris.test/**', async route => {
         const request = route.request();
         const url = new URL(request.url());
@@ -44,7 +51,16 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
         else if (pathname.endsWith('/appointments')) data = [appointment];
         else if (pathname.endsWith('/availability')) data = { slots: [{ starts_at: '2026-10-27T17:00:00Z', ends_at: '2026-10-27T17:30:00Z' }] };
         else if (pathname.endsWith('/expenses')) data = [expense];
-        else if (pathname.endsWith('/closures') || pathname.endsWith('/audit-logs')) data = [];
+        else if (pathname.endsWith('/closures')) data = [];
+        else if (pathname.endsWith('/audit-logs')) {
+          auditQueries.push(url.searchParams.get('area') || '');
+          assert.equal(url.searchParams.get('limit'), '100');
+          if (failAudit) {
+            failAudit = false;
+            return route.fulfill({ status: 503, json: { detail: 'Histórico temporariamente indisponível.' } });
+          }
+          data = activities.filter(item => !url.searchParams.get('area') || item.area === url.searchParams.get('area'));
+        }
         else if (pathname.endsWith('/reports/financial')) {
           data = { date_from: url.searchParams.get('date_from'), date_to: url.searchParams.get('date_to'), total_revenue_cents: 6000, total_commission_cents: 3000, net_revenue_cents: 3000, total_expenses_cents: 240000, final_result_cents: -237000, average_ticket_cents: 6000, attendance_rate_percent: 100, completed: 1, scheduled: 0, confirmed: 1, cancelled: 0, no_show: 0,
             by_barber: [{ id: 'barber', label: barber.full_name, total_cents: 6000, appointments: 1, commission_percentage: 50, commission_cents: 3000 }],
@@ -113,6 +129,34 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 768, height: 1024 
         await page.locator(close).click();
         await page.locator(modal).waitFor({ state: 'hidden' });
       }
+      await navigate('atividades');
+      assert.equal(await page.locator('.audit-log-item').count(), 3);
+      assert.match(await page.locator('#audit-log-list').innerText(), /Proprietário principal/);
+      assert.match(await page.locator('#audit-log-list').innerText(), /Coproprietário/);
+      assert.match(await page.locator('#audit-log-list').innerText(), /Profissional/);
+      assert.match(await page.locator('#audit-log-list').innerText(), /coproprietario.excluido/);
+      assert.match(await page.locator('.audit-log-item time').first().innerText(), /11:30/);
+      assert.equal(await page.locator('#audit-log-list img, #audit-log-list script').count(), 0);
+      assert.equal(await page.evaluate(() => window.auditInjected), undefined);
+      assert.equal(await page.locator('#audit-log-list button').count(), 0);
+      await checkLayout('activities-populated');
+      await page.locator('#audit-area').selectOption('Financeiro');
+      await page.waitForFunction(() => document.querySelectorAll('.audit-log-item').length === 1);
+      assert.match(await page.locator('#audit-log-list').innerText(), /pagamento de uma despesa/);
+      await page.locator('#audit-area').selectOption('Clientes');
+      await page.locator('#audit-log-list .empty').waitFor();
+      assert.match(await page.locator('#audit-log-list').innerText(), /Nenhuma atividade/);
+      await page.locator('#audit-area').selectOption('Agenda');
+      await page.waitForFunction(() => document.querySelectorAll('.audit-log-item').length === 2);
+      failAudit = true;
+      await page.locator('#refresh-audit-logs').click();
+      await page.waitForFunction(() => !document.getElementById('refresh-audit-logs').disabled);
+      assert.match(await page.locator('#audit-log-list').innerText(), /Não foi possível carregar/);
+      assert.equal(await page.locator('.audit-log-item').count(), 0);
+      await page.locator('#refresh-audit-logs').click();
+      await page.waitForFunction(() => document.querySelectorAll('.audit-log-item').length === 2);
+      assert.ok(auditQueries.includes('Financeiro') && auditQueries.includes('Clientes'));
+      await checkLayout('activities-filtered');
       await page.locator('#open-account-security').click();
       await page.locator('#account-security-modal').waitFor({ state: 'visible' });
       await checkLayout('account-security');

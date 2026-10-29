@@ -91,7 +91,8 @@ da versão implantada.
   A [criação concorrente do primeiro proprietário](./owner-setup-validation.md)
   recebeu bloqueio por barbearia e teste adicional. André confirmou a homologação
   em 29/10/2026: 11 testes aprovados e um ignorado em 22,82 segundos, com uma única
-  criação entre três solicitações simultâneas. A publicação da correção está pendente.
+  criação entre três solicitações simultâneas. O commit `3146c3c` passou nos quatro
+  jobs do CI e foi identificado na API publicada, com banco saudável.
   Testes específicos de login, bloqueio e recuperação preparados no
   [guia de autenticação](./authentication.md#validação-adicional-de-acesso-em-27102026);
   a homologação PostgreSQL foi aprovada em 27/10/2026. A entrega real de e-mail
@@ -110,6 +111,8 @@ da versão implantada.
   [guia de validação financeira](./financial-validation.md). A revisão visual da
   versão implantada permanece pendente.
 - [ ] Testar interface em celular, tablet e computador.
+  Filtros, autoria e recuperação de falha no histórico de atividades foram testados
+  em navegador local em 29/10/2026. Essa melhoria de interface aguarda publicação.
   A cobertura inclui reserva pública, login e painéis do proprietário e barbeiro,
   conforme o [guia de interface](./interface-validation.md). A agenda e o financeiro
   publicados e o painel restrito do profissional no celular foram conferidos

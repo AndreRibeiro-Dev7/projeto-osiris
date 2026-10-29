@@ -48,4 +48,6 @@ André executou a suíte em PostgreSQL temporário: 11 testes aprovados e 1 igno
 em 22,82 segundos. O cenário confirmou uma única criação em três solicitações
 simultâneas e dois conflitos, além dos controles de configuração e autenticação.
 O teste opcional de carga não foi executado. O container e o banco temporários
-foram removidos sem criação de volume. A publicação desta correção está pendente.
+foram removidos sem criação de volume. O commit `3146c3c` foi aprovado nos quatro
+jobs do [GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40926511866)
+e identificado na API publicada. A API e o banco responderam `ok`.
