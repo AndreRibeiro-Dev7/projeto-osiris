@@ -127,6 +127,7 @@ def main() -> int:
             print("Carga moderada validada em PostgreSQL temporario; producao nao foi acessada.")
             return 0
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
+        print("Limites publicos validados: concorrencia, espera, renovacao e gestao de reservas.")
         print("Acesso validado: login, bloqueio, recuperacao simulada e revogacao de sessoes.")
         print(
             "Limites de IA validados: concorrencia, espera, renovacao e isolamento por barbearia."

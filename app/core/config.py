@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5.6-luna"
     assistant_requests_per_minute: int = Field(default=20, ge=1, le=1000)
     assistant_requests_per_hour: int = Field(default=200, ge=1, le=10000)
+    public_booking_requests_per_minute: int = Field(default=20, ge=1, le=1000)
+    public_booking_requests_per_hour: int = Field(default=200, ge=1, le=10000)
     jwt_secret_key: str = ""
     owner_bootstrap_enabled: bool = False
     owner_bootstrap_token: str = ""

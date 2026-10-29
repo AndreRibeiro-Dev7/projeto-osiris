@@ -36,6 +36,10 @@ services:
         value: "20"
       - key: ASSISTANT_REQUESTS_PER_HOUR
         value: "200"
+      - key: PUBLIC_BOOKING_REQUESTS_PER_MINUTE
+        value: "20"
+      - key: PUBLIC_BOOKING_REQUESTS_PER_HOUR
+        value: "200"
       - key: OPENAI_API_KEY
         sync: false
       - key: EMAIL_DELIVERY_ENABLED

@@ -65,6 +65,10 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
             customer_name: 'Cliente de teste', customer_phone: '11999999999', notes: null,
           });
           bookingRequests++;
+          if (bookingRequests === 1) return route.fulfill({
+            status: 429, headers: { 'Retry-After': '45' },
+            json: { detail: 'Limite de tentativas de agendamento atingido. Aguarde 45 segundos para tentar novamente.' },
+          });
           return route.fulfill({ json: { ...summary, starts_at: '2026-10-27T11:30:00-03:00', booking_token: 'test-token' } });
         }
         if (pathname === '/api/v1/public/businesses/test-business/access/request') {
@@ -133,8 +137,17 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       await page.locator('#name').fill('Cliente de teste');
       await page.locator('#phone').fill('11999999999');
       await page.locator('#submit').click();
+      await page.locator('#error').filter({ hasText: 'Aguarde 45 segundos' }).waitFor();
+      await page.waitForFunction(() => document.querySelector('#submit').disabled && !document.querySelector('.slot.selected'));
+      assert.equal(await page.locator('#success').isHidden(), true);
+      assert.equal(await page.locator('#name').inputValue(), 'Cliente de teste');
+      assert.equal(await page.locator('#phone').inputValue(), '11999999999');
+      assert.equal(await page.evaluate(() => localStorage.getItem('osiris:bookings:test-business')), null);
+      await page.clock.fastForward(45000);
+      await page.getByRole('button', { name: '11:30', exact: true }).click();
+      await page.locator('#submit').click();
       await page.locator('#success').waitFor({ state: 'visible' });
-      assert.equal(bookingRequests, 1);
+      assert.equal(bookingRequests, 2);
       assert.match(await page.locator('#success-detail').textContent(), /11:30/);
       assert.match(await page.locator('#cancellation-link').inputValue(), /booking_token=test-token/);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -211,7 +224,7 @@ for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 900 
       await page.locator('#phone').fill('11999999999');
       await page.locator('#submit').click();
       await page.locator('#success').waitFor({ state: 'visible' });
-      assert.equal(bookingRequests, 2);
+      assert.equal(bookingRequests, 3);
       assert.match(await page.locator('#saved-notice').textContent(), /não permitiu salvar/);
       assert.notEqual(await page.locator('#backup-link').getAttribute('open'), null);
       recoveryEnabled = true;

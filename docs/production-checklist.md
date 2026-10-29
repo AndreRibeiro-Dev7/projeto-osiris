@@ -38,8 +38,14 @@ da versão implantada.
 - [ ] Aplicar limites de requisição em login, IA e endpoints públicos.
   Os [limites persistentes do assistente](./assistant-limits.md) foram aprovados
   em PostgreSQL temporário, com HTTP 429 e espera informada. André apresentou
-  oito testes aprovados em 29,31 segundos. A publicação está pendente. O item continua aberto para os
+  oito testes aprovados em 29,31 segundos. O commit `ed0780c` foi aprovado no CI
+  e identificado na API publicada. O item continua aberto para os
   demais endpoints e sua validação em produção.
+  O [teto agregado de criação pública](./public-booking-limits.md) foi validado
+  por barbearia, sem depender de IP ou cabeçalhos. André apresentou nove testes
+  aprovados em PostgreSQL temporário (22,85 segundos). A publicação está pendente;
+  os demais endpoints públicos
+  continuam fora desse contador.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
 - [ ] Criar trilha de auditoria para ações administrativas e financeiras.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).

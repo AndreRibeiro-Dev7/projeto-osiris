@@ -18,6 +18,8 @@ from app.core.exceptions import (
 )
 from app.database.session import get_db_session
 from app.integrations.whatsapp_delivery import recovery_is_available, send_booking_access_code
+from app.models.public_booking_usage import PublicBookingUsage
+from app.repositories.business import BusinessRepository
 from app.schemas.appointment import AppointmentRescheduleRequest
 from app.schemas.availability import AvailabilityResponse
 from app.schemas.booking_access import (
@@ -26,12 +28,14 @@ from app.schemas.booking_access import (
     BookingAccessResult,
     BookingAccessVerify,
 )
+from app.schemas.error import ErrorResponse
 from app.schemas.public_booking import (
     PublicBookingCreate,
     PublicBookingResponse,
     PublicBookingSummary,
     PublicBusiness,
 )
+from app.services.assistant_usage import BusinessRateLimited, BusinessUsageService
 from app.services.availability import AvailabilityService
 from app.services.booking_access import (
     BookingAccessService,
@@ -209,12 +213,36 @@ async def get_public_availability(
     "/{business_id}/appointments",
     response_model=PublicBookingResponse,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        429: {
+            "model": ErrorResponse,
+            "description": "Public booking quota exhausted; observe Retry-After.",
+            "headers": {"Retry-After": {"schema": {"type": "integer", "minimum": 1}}},
+        }
+    },
 )
 async def create_public_booking(
     business_id: UUID, payload: PublicBookingCreate, session: AsyncSession = Depends(get_db_session)
 ) -> PublicBookingResponse:
     try:
+        if await BusinessRepository(session).get_by_id(business_id) is None:
+            raise ResourceNotFoundError("Business not found.")
+        settings = get_settings()
+        await BusinessUsageService(session, PublicBookingUsage).consume(
+            business_id,
+            per_minute=settings.public_booking_requests_per_minute,
+            per_hour=settings.public_booking_requests_per_hour,
+        )
         return await PublicBookingService(session).create(business_id, payload)
+    except BusinessRateLimited as error:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Limite de tentativas de agendamento atingido. Aguarde {error.seconds} segundos "
+                "para tentar novamente. Suas reservas existentes continuam disponíveis."
+            ),
+            headers={"Retry-After": str(error.seconds)},
+        ) from error
     except ResourceNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except (InactiveBarberError, InvalidSchedulingReferenceError, SchedulingConflictError) as error:

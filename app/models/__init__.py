@@ -12,6 +12,7 @@ from app.models.business import Business
 from app.models.business_closure import BusinessClosure
 from app.models.customer import Customer
 from app.models.expense import Expense
+from app.models.public_booking_usage import PublicBookingUsage
 from app.models.service import Service
 from app.models.user import User
 
@@ -22,6 +23,7 @@ __all__ = [
     "PaymentMethod",
     "AssistantConversation",
     "AssistantUsage",
+    "PublicBookingUsage",
     "Barber",
     "BarberSchedule",
     "BarberTimeOff",
