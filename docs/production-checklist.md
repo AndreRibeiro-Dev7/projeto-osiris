@@ -32,7 +32,8 @@ da versão implantada.
   simulados passaram em 29/10/2026. André também confirmou a restauração isolada
   de 25.202 agendamentos do backup de 22/09/2026, com remoção do contêiner e sem
   volume persistente. A cópia antiga não tem SHA-256; compatibilidade com novas
-  migrações não foi verificada. A publicação desta revisão está pendente.
+  migrações não foi verificada. O commit `9e0462b` foi publicado e aprovado nos
+  cinco jobs do CI, incluindo o novo teste do script no Windows.
 
 ## 3. Segurança e proteção de dados
 
@@ -118,7 +119,8 @@ da versão implantada.
   versão implantada permanece pendente.
 - [ ] Testar interface em celular, tablet e computador.
   Filtros, autoria e recuperação de falha no histórico de atividades foram testados
-  em navegador local em 29/10/2026. Essa melhoria de interface aguarda publicação.
+  em navegador local em 29/10/2026. A melhoria foi publicada no commit `35371ae`,
+  aprovado no CI; o arquivo atualizado foi conferido no Render.
   A cobertura inclui reserva pública, login e painéis do proprietário e barbeiro,
   conforme o [guia de interface](./interface-validation.md). A agenda e o financeiro
   publicados e o painel restrito do profissional no celular foram conferidos
@@ -131,6 +133,8 @@ da versão implantada.
   Falta o ensaio com infraestrutura e histórico comparáveis ao uso esperado;
   o resultado local não mede a capacidade do plano de produção.
 - [ ] Fazer homologação com dados fictícios e depois com o cliente piloto.
+  O [roteiro de demonstração e piloto](./pilot-onboarding.md) foi preparado em
+  29/10/2026. Ainda não há barbearia escolhida nem aprovação de operação real.
 
 ## 7. Entrada em operação
 

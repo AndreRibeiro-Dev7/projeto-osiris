@@ -69,7 +69,11 @@ Os outros sete cenários de reserva, login e barbeiro também passaram: 11 teste
 de navegador aprovados. Os dois testes Python de configuração passaram; cinco
 cenários Bash/Linux ficaram ignorados no Windows. Ruff, Black e a conferência
 de espaços do diff passaram. A API é simulada nessa validação, sem mutações reais.
-A publicação desta melhoria de interface ainda está pendente.
+A melhoria foi publicada no commit `35371ae`, com quatro jobs do
+[GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40930803601)
+aprovados. A revisão, a referência versionada de `app.js` e a mensagem de falha
+foram conferidas no Render, com API e banco saudáveis. A conferência manual
+autenticada de Atividades em produção permanece separada dos testes simulados.
 
 Os sete testes iniciais passaram localmente, mas o CI do commit `9bc3fbd`
 detectou 13 pixels de transbordamento nos indicadores financeiros do tablet.

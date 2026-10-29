@@ -95,7 +95,9 @@ André executou a restauração real isolada em 29/10/2026 com o arquivo
 a remoção do contêiner temporário, com dados em memória e sem volume persistente.
 O aviso de ausência de SHA-256 era esperado para essa cópia antiga; o resultado
 não comprova seu hash original nem a compatibilidade com migrações posteriores.
-A publicação desta revisão e a aprovação do novo job no CI estão pendentes.
+A revisão foi publicada no commit `9e0462b`, identificado na API com banco saudável.
+Os cinco jobs do [GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40940590513)
+foram aprovados, incluindo `backup-script` no Windows.
 
 ## Recuperação
 

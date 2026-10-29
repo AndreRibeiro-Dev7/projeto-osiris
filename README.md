@@ -206,6 +206,8 @@ e à operação comercial:
 
 O roteiro detalhado está em
 [Checklist para produção](./docs/production-checklist.md).
+A preparação da primeira barbearia está no
+[Roteiro de demonstração e piloto](./docs/pilot-onboarding.md).
 As instruções técnicas estão no
 [Guia de publicação](./docs/deployment.md).
 O procedimento de proteção dos dados está no
