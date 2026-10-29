@@ -43,7 +43,8 @@ da versão implantada.
   demais endpoints e sua validação em produção.
   O [teto agregado de criação pública](./public-booking-limits.md) foi validado
   por barbearia, sem depender de IP ou cabeçalhos. André apresentou nove testes
-  aprovados em PostgreSQL temporário (22,85 segundos). A publicação está pendente;
+  aprovados em PostgreSQL temporário (22,85 segundos). O commit `25c952a` foi
+  aprovado no CI e identificado na API publicada;
   os demais endpoints públicos
   continuam fora desse contador.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
@@ -53,7 +54,8 @@ da versão implantada.
   adicionais foram aprovados por André em 29/10/2026: dez testes em PostgreSQL
   temporário, um ignorado, em 24,12 segundos. A ação e seu histórico usam
   transações separadas; não há recuperação automática de entradas ausentes.
-  A publicação desta revisão ainda está pendente.
+  O commit `2b51f7d` foi aprovado nos quatro jobs do CI e identificado na API
+  publicada, com banco saudável. A revisão visual de Atividades permanece pendente.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).
 - [x] Revisar dependências e corrigir vulnerabilidades conhecidas no inventário local.
   A [auditoria das dependências](./dependency-security.md) identificou avisos em
@@ -86,6 +88,10 @@ da versão implantada.
 ## 6. Testes antes do lançamento
 
 - [ ] Testar cadastro, login, logout e recuperação de acesso.
+  A [criação concorrente do primeiro proprietário](./owner-setup-validation.md)
+  recebeu bloqueio por barbearia e teste adicional. André confirmou a homologação
+  em 29/10/2026: 11 testes aprovados e um ignorado em 22,82 segundos, com uma única
+  criação entre três solicitações simultâneas. A publicação da correção está pendente.
   Testes específicos de login, bloqueio e recuperação preparados no
   [guia de autenticação](./authentication.md#validação-adicional-de-acesso-em-27102026);
   a homologação PostgreSQL foi aprovada em 27/10/2026. A entrega real de e-mail

@@ -133,6 +133,7 @@ def main() -> int:
         )
         print("Limites publicos validados: concorrencia, espera, renovacao e gestao de reservas.")
         print("Acesso validado: login, bloqueio, recuperacao simulada e revogacao de sessoes.")
+        print("Primeiro proprietario validado: token de configuracao e criacao concorrente unica.")
         print(
             "Limites de IA validados: concorrencia, espera, renovacao e isolamento por barbearia."
         )

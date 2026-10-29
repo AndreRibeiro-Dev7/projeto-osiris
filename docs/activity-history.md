@@ -70,7 +70,10 @@ André executou a homologação em PostgreSQL temporário: 10 testes aprovados e
 Foram validados autoria, financeiro, filtros, preservação após excluir o
 coproprietário e resposta preservada na falha simulada de auditoria.
 O container e o banco temporários foram removidos sem criação de volume.
-A publicação desta revisão ainda está pendente.
+A revisão foi publicada no commit `2b51f7d`: os quatro jobs do
+[GitHub Actions](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40922635401)
+foram aprovados. A API informou essa revisão em `/api/v1/health` e o endpoint
+de saúde do banco respondeu `ok`. A conferência visual de Atividades continua separada.
 Nenhuma falha foi provocada em produção e as notificações dos testes são simuladas.
 Não há nova migração nesta etapa. A API não oferece edição ou exclusão de entradas;
 isso não impede alterações por alguém com acesso administrativo direto ao banco.

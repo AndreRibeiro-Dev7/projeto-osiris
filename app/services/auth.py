@@ -38,7 +38,7 @@ class AuthService:
 
     async def bootstrap_owner(self, *, business_id: UUID, email: str, password: str) -> User:
         """Create the first and only bootstrap owner for a business."""
-        if await self._businesses.get_by_id(business_id) is None:
+        if await self._businesses.get_by_id_for_update(business_id) is None:
             raise ResourceNotFoundError("Business not found.")
         if await self._users.count_for_business(business_id) > 0:
             raise DuplicateResourceError("This business already has an owner.")
