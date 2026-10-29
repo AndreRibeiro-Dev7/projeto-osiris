@@ -78,4 +78,7 @@ ou PostgreSQL ficaram pulados. Lint e tipos também passaram. O novo Black exigi
 somente a formatação de uma chamada na migração existente de proprietário principal;
 essa alteração não muda o schema nem o conteúdo SQL da migração.
 
-A primeira execução do novo job no GitHub Actions permanece pendente até o push.
+O job `dependency-audit` foi aprovado no
+[CI do commit e63b845](https://github.com/AndreRibeiro-Dev7/projeto-osiris/actions/runs/40623521159),
+sem vulnerabilidades conhecidas. O artefato com o inventário e o relatório foi
+salvo nessa execução. Os outros três jobs também passaram.

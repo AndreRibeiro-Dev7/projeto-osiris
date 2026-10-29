@@ -154,4 +154,5 @@ especialmente credenciais rotacionadas. Consulte o
 [procedimento oficial](https://render.com/docs/rollbacks).
 
 Esse procedimento está documentado; nenhum rollback real foi executado nesta
-etapa. A identificação por `revision` deve ser conferida após publicar a mudança.
+etapa. A identificação por `revision` foi conferida em produção, incluindo o
+commit `e63b845`, observado na revisão HTTP de 28/10/2026.

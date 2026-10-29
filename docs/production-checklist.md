@@ -13,10 +13,10 @@ da versão implantada.
 - [ ] Confirmar que nenhuma chave, senha ou dado pessoal está versionado.
 - [x] Executar testes, lint, formatação e verificação de tipos.
 - [x] Aplicar todas as migrações em um banco de homologação.
-- [ ] Criar uma versão identificável e documentar como fazer rollback.
-  A identificação do commit em `/api/v1/health` e o procedimento estão preparados
-  no [guia de publicação](./deployment.md#atualizações-e-rollback). Falta conferir
-  `revision` na versão publicada; nenhum rollback de produção foi executado.
+- [x] Criar uma versão identificável e documentar como fazer rollback.
+  A identificação em `/api/v1/health` foi conferida na versão publicada, e o
+  procedimento está no [guia de publicação](./deployment.md#atualizações-e-rollback).
+  Nenhum rollback de produção foi executado.
 
 ## 2. Infraestrutura
 
@@ -31,7 +31,10 @@ da versão implantada.
 ## 3. Segurança e proteção de dados
 
 - [ ] Gerar uma chave JWT exclusiva e forte para produção.
-- [ ] Desativar `DEBUG` e restringir a documentação da API em produção.
+- [ ] Conferir `DEBUG=false` nas variáveis efetivas do serviço de produção.
+- [x] Restringir a documentação da API em produção.
+  Swagger, ReDoc e OpenAPI retornaram HTTP 404 no commit `e63b845`, conforme a
+  [revisão HTTP](./browser-security.md). API e painel incluíram os cabeçalhos esperados.
 - [ ] Aplicar limites de requisição em login, IA e endpoints públicos.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
 - [ ] Criar trilha de auditoria para ações administrativas e financeiras.
@@ -39,8 +42,8 @@ da versão implantada.
 - [x] Revisar dependências e corrigir vulnerabilidades conhecidas no inventário local.
   A [auditoria das dependências](./dependency-security.md) identificou avisos em
   ferramentas de desenvolvimento, que foram atualizadas. A nova consulta dos
-  92 pacotes locais não encontrou avisos conhecidos. O novo job automático do CI
-  ainda precisa ser aprovado após o push; a imagem de produção não foi inventariada.
+  92 pacotes locais não encontrou avisos conhecidos. O novo job foi aprovado no
+  CI do commit `e63b845`; a imagem de produção não foi inventariada.
 
 ## 4. E-mail e integrações
 
