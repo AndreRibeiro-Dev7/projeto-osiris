@@ -129,6 +129,9 @@ def main() -> int:
         print("Isolamento validado em PostgreSQL: duas empresas e seis contas ficticias.")
         print("Acesso validado: login, bloqueio, recuperacao simulada e revogacao de sessoes.")
         print(
+            "Limites de IA validados: concorrencia, espera, renovacao e isolamento por barbearia."
+        )
+        print(
             "Agenda interna validada: conflitos, pausa, folga, fechamento, "
             "reagendamento e cancelamento."
         )

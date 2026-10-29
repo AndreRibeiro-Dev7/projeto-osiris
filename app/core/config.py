@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     database_echo: bool = False
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-luna"
+    assistant_requests_per_minute: int = Field(default=20, ge=1, le=1000)
+    assistant_requests_per_hour: int = Field(default=200, ge=1, le=10000)
     jwt_secret_key: str = ""
     owner_bootstrap_enabled: bool = False
     owner_bootstrap_token: str = ""

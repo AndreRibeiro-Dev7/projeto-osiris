@@ -60,6 +60,7 @@ from app.schemas.report import FinancialReportResponse
 from app.schemas.service import ServiceCreate, ServiceResponse, ServiceUpdate
 from app.services.appointment import AppointmentService
 from app.services.assistant_booking import AssistantBookingService
+from app.services.assistant_usage import AssistantRateLimited, AssistantUsageService
 from app.services.availability import AvailabilityService
 from app.services.barber import BarberService
 from app.services.business import BusinessService
@@ -952,6 +953,10 @@ async def list_barber_availability(
             "model": ErrorResponse,
             "description": "The OpenAI API key is not configured.",
         },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "model": ErrorResponse,
+            "description": "The business assistant quota is exhausted; observe Retry-After.",
+        },
     },
 )
 async def send_assistant_message(
@@ -966,6 +971,22 @@ async def send_assistant_message(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="OPENAI_API_KEY is not configured.",
         )
+
+    try:
+        await AssistantUsageService(session).consume(
+            business_id,
+            per_minute=settings.assistant_requests_per_minute,
+            per_hour=settings.assistant_requests_per_hour,
+        )
+    except AssistantRateLimited as error:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=(
+                f"Limite de mensagens do assistente atingido. Aguarde {error.seconds} segundos "
+                "antes de tentar novamente. A agenda manual continua disponível."
+            ),
+            headers={"Retry-After": str(error.seconds)},
+        ) from error
 
     agent = AvailabilityAgent(
         AvailabilityService(session),

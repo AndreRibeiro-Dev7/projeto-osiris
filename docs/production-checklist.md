@@ -36,6 +36,10 @@ da versão implantada.
   Swagger, ReDoc e OpenAPI retornaram HTTP 404 no commit `e63b845`, conforme a
   [revisão HTTP](./browser-security.md). API e painel incluíram os cabeçalhos esperados.
 - [ ] Aplicar limites de requisição em login, IA e endpoints públicos.
+  Os [limites persistentes do assistente](./assistant-limits.md) foram aprovados
+  em PostgreSQL temporário, com HTTP 429 e espera informada. André apresentou
+  oito testes aprovados em 29,31 segundos. A publicação está pendente. O item continua aberto para os
+  demais endpoints e sua validação em produção.
 - [x] Revisar autorização e isolamento dos dados de cada empresa.
 - [ ] Criar trilha de auditoria para ações administrativas e financeiras.
 - [ ] Definir política de privacidade, retenção e exclusão de dados (LGPD).

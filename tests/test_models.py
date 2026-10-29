@@ -7,6 +7,7 @@ def test_scheduling_models_are_registered_in_metadata() -> None:
         "appointments",
         "audit_logs",
         "assistant_conversations",
+        "assistant_usage_limits",
         "barber_schedules",
         "barber_time_off",
         "barbers",

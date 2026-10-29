@@ -77,6 +77,8 @@ async def check_assistant_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: SimpleNamespace(
             openai_api_key="fictitious-test-key",
             openai_model="controlled-test-model",
+            assistant_requests_per_minute=20,
+            assistant_requests_per_hour=200,
         ),
     )
     business_id, barber_id, customer_id = (uuid4() for _ in range(3))

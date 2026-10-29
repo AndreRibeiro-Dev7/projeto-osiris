@@ -2,6 +2,7 @@
 
 from app.models.appointment import Appointment, AppointmentStatus, PaymentMethod
 from app.models.assistant_conversation import AssistantConversation
+from app.models.assistant_usage import AssistantUsage
 from app.models.audit_log import AuditLog
 from app.models.barber import Barber
 from app.models.barber_schedule import BarberSchedule
@@ -20,6 +21,7 @@ __all__ = [
     "AppointmentStatus",
     "PaymentMethod",
     "AssistantConversation",
+    "AssistantUsage",
     "Barber",
     "BarberSchedule",
     "BarberTimeOff",
