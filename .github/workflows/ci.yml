@@ -7,6 +7,21 @@ on:
     branches: [main]
 
 jobs:
+  backup-script:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install recovery script test dependency
+        run: python -m pip install "pytest>=9.0.3,<10.0"
+      - name: Validate PowerShell recovery with simulated Docker
+        run: python -m pytest tests/test_backup_restore_script.py -rs
+
   dependency-audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15

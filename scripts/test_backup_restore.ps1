@@ -1,5 +1,6 @@
 param(
-    [string]$BackupFile = ""
+    [string]$BackupFile = "",
+    [switch]$RequireChecksum
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,6 +37,40 @@ if ($backup.Length -le 0) {
     throw "O arquivo de backup esta vazio."
 }
 
+$hashPath = "$($backup.FullName).sha256"
+if (Test-Path -LiteralPath $hashPath) {
+    $hashContent = (Get-Content -LiteralPath $hashPath -Raw).Trim()
+    if ($hashContent -notmatch '^([a-fA-F0-9]{64})\s+(.+)$') {
+        throw "O arquivo SHA-256 tem formato invalido."
+    }
+    $expectedHash = $Matches[1]
+    $expectedName = $Matches[2]
+    if ($expectedName -cne $backup.Name) {
+        throw "O SHA-256 pertence a outro arquivo de backup."
+    }
+    $hashStream = [System.IO.File]::OpenRead($backup.FullName)
+    $hashAlgorithm = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $actualHash = [System.BitConverter]::ToString(
+            $hashAlgorithm.ComputeHash($hashStream)
+        ).Replace("-", "")
+    }
+    finally {
+        $hashStream.Dispose()
+        $hashAlgorithm.Dispose()
+    }
+    if ($actualHash -ne $expectedHash) {
+        throw "SHA-256 divergente. A restauracao nao foi iniciada."
+    }
+    Write-Output "Integridade SHA-256 conferida."
+}
+elseif ($RequireChecksum) {
+    throw "O arquivo SHA-256 e obrigatorio para esta verificacao."
+}
+else {
+    Write-Warning "Backup antigo sem SHA-256. A integridade sera verificada apenas pela restauracao."
+}
+
 $backupRoot = $backup.Directory.FullName
 $backupName = $backup.Name
 $databaseName = "osiris_restore_test"
@@ -46,6 +81,8 @@ $containerCreated = $false
 try {
     & $docker run --detach `
         --name $containerName `
+        --network none `
+        --tmpfs /var/lib/postgresql/data `
         --env "POSTGRES_PASSWORD=$postgresPassword" `
         --env "POSTGRES_DB=$databaseName" `
         --volume "${backupRoot}:/backups:ro" `
@@ -75,6 +112,7 @@ try {
         --no-owner `
         --no-acl `
         --exit-on-error `
+        --single-transaction `
         "/backups/$backupName"
     if ($LASTEXITCODE -ne 0) {
         throw "A restauracao falhou com codigo $LASTEXITCODE."
@@ -128,10 +166,15 @@ SELECT
     Write-Output "Restauracao validada com sucesso: $($backup.FullName)"
     Write-Output "Empresas | usuarios | barbeiros | clientes | servicos | agendamentos"
     Write-Output $rowSummary.Trim()
+    Write-Output "Teste local concluido. Isto nao confirma compatibilidade com novas migracoes."
 }
 finally {
     if ($containerCreated) {
-        & $docker rm --force $containerName 2>$null | Out-Null
+        & $docker rm --force --volumes $containerName 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Nao foi possivel remover o container temporario: $containerName"
+        }
+        Write-Output "Container temporario removido; dados em memoria, sem volume persistente."
     }
     Remove-Variable postgresPassword -ErrorAction SilentlyContinue
 }

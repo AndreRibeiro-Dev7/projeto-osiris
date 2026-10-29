@@ -27,6 +27,12 @@ da versão implantada.
 - [ ] Armazenar segredos no serviço de hospedagem, nunca no repositório.
 - [x] Confirmar backup contínuo e recuperação ponto a ponto do Render Postgres pago.
 - [x] Testar uma restauração completa em banco vazio e isolado.
+  A revisão do [script de restauração](./backups.md) acrescenta verificação do
+  SHA-256 e armazenamento temporário sem volume persistente. Seus 16 testes
+  simulados passaram em 29/10/2026. André também confirmou a restauração isolada
+  de 25.202 agendamentos do backup de 22/09/2026, com remoção do contêiner e sem
+  volume persistente. A cópia antiga não tem SHA-256; compatibilidade com novas
+  migrações não foi verificada. A publicação desta revisão está pendente.
 
 ## 3. Segurança e proteção de dados
 
